@@ -6,6 +6,11 @@ using Test
         @test PiTimes(1) ≈ π
         @test PiTimes(1.5) ≈ π*1.5
         @test PiTimes(1//2) ≈ π/2
+
+        @test PiTimes(1) === Pi
+        @test Pi == π
+        @test π == Pi
+        @test 2π ≈ 2Pi
     end
     @testset "Ordering" begin
         @testset "inequality" begin
@@ -36,44 +41,53 @@ using Test
         @test Float16(PiTimes(1)) ≈ Float16(1)*π
     end
     @testset "algebra" begin
-        p1 = PiTimes(3)
-        p2 = PiTimes(4)
+        p = PiTimes(3)
+        q = PiTimes(4)
 
         @testset "negation" begin
-            @test -p1 isa PiTimes{Int}
-            @test -p1 == PiTimes(-p1.x)
+            @test -p isa PiTimes{Int}
+            @test -p == PiTimes(-p.x)
         end 
 
         @testset "addition" begin
-            @test p1 + p1 == PiTimes(2p1.x)
-            @test p1 + p2 == PiTimes(p1.x + p2.x)
+            @test p + p == PiTimes(2p.x)
+            @test p + q == PiTimes(p.x + q.x)
         end
 
         @testset "subtraction" begin
-            @test p1 - p1 == PiTimes(0)
-            @test p1 - p2 == PiTimes(p1.x - p2.x)
+            @test p - p == PiTimes(0)
+            @test p - q == PiTimes(p.x - q.x)
         end
 
         @testset "multiplication" begin
-            @test p1*2 == PiTimes(p1.x*2)
-            @test 2*p1 == PiTimes(p1.x*2)
-            @test 2p1 == PiTimes(p1.x*2)
-            @test p1*p1 ≈ (p1.x*π)^2
-            @test p1*p2 ≈ (p1.x*p2.x)*π^2
-            @test p1 * im == PiTimes(0) + PiTimes(p1.x)*im 
-            @test im* p1 == PiTimes(0) + PiTimes(p1.x)*im
-            @test (1+im)*p1 == PiTimes(p1.x) + PiTimes(p1.x)*im
+            @test p*2 == PiTimes(p.x*2)
+            @test 2*p == PiTimes(p.x*2)
+            @test 2p == PiTimes(p.x*2)
+            @test p*p ≈ (p.x*π)^2
+            @test p*q ≈ (p.x*q.x)*π^2
+            @test p * im == PiTimes(0) + PiTimes(p.x)*im 
+            @test im* p == PiTimes(0) + PiTimes(p.x)*im
+            @test (1+im)*p == PiTimes(p.x) + PiTimes(p.x)*im
         end
 
         @testset "division" begin
-            @test p1/p1 == 1
-            @test p1/p2 == p1.x/p2.x == 3/4 # works as 1/4 can be stored exactly
-            @test p2/p1 == p2.x/p1.x
+            @test p/p == 1
+            @test p/q == p.x/q.x == 3/4 # works as 1/4 can be stored exactly
+            @test q/p == q.x/p.x
 
-            @test p1/π === p1.x
+            @test p/2 == PiTimes(p.x/2)
+
+            @test p/π === float(p.x)
             @test PiTimes(7.3)/π === 7.3
             @test π/PiTimes(1/7.3) ≈ 7.3 # within rounding errors
-            @test π/PiTimes(1//7) === 7//1
+            @test π/PiTimes(1//7) === float(7)
+
+            @test PiTimes(3)/4 == PiTimes(3/4)
+        end
+
+        @testset "Rational" begin
+            @test p//2 == PiTimes(p.x//2)
+            @test Pi//2 == PiTimes(1//2)
         end
     end
     @testset "trigonometric functions" begin
@@ -96,16 +110,26 @@ using Test
             @test exp(im*PiTimes(1/2)) == cis(PiTimes(1/2)) == im
             @test exp(im*PiTimes(1)) == cis(PiTimes(1))== -1
             @test exp(im*PiTimes(3/2)) == cis(PiTimes(3/2)) == -im
+
+            @test exp(im*Pi/2) == im
+            @test exp(im*Pi) == -1
+            @test exp(im*3Pi/2) == -im
         end
 
         @testset "sec and csc" begin
             @test sec(PiTimes(1)) == -1
+            @test sec(Pi) == -1
             @test sec(PiTimes(2)) == 1
+            @test sec(2Pi) == 1
             @test !isfinite(sec(PiTimes(1/2)))
+            @test !isfinite(sec(Pi/2))
 
             @test csc(PiTimes(1/2)) == 1
+            @test csc(Pi/2) == 1
             @test csc(PiTimes(3/2)) == -1
+            @test csc(3Pi/2) == -1
             @test !isfinite(csc(PiTimes(1))) 
+            @test !isfinite(csc(Pi))
         end
     end
     @testset "hyperbolic" begin

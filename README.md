@@ -7,19 +7,21 @@
 
 # Introduction
 
-This package introduces the type `PiTimes` that automatically uses the functions `sinpi` and `cospi` instead of `sin` and `cos` to produce accurate results by avoiding floating-point inaccuracies to some extent. For example:
+This package introduces the type `PiTimes` that automatically uses the functions `sinpi` and `cospi` instead of `sin` and `cos` to produce accurate results by avoiding floating-point inaccuracies to some extent. It also provides the constant `Pi` for convenience, defined as `PiTimes(1)`, which behaves like `pi` except it produces results with higher accuracy in certain trigonometric contexts.
+
+For example:
 
 ```julia
 julia> cos(3π/2)
 -1.8369701987210297e-16
 
-julia> cos(PiTimes(3/2))
+julia> cos(3Pi/2)
 0.0
 
 julia> sin(-π)
 -1.2246467991473532e-16
 
-julia> sin(PiTimes(-1))
+julia> sin(-Pi)
 -0.0
 ```
 
@@ -29,20 +31,20 @@ It automatically promotes to `Complex` as necessary, so we may compute complex e
 julia> exp(im*π/2)
 6.123233995736766e-17 + 1.0im
 
-julia> exp(im*PiTimes(1/2))
+julia> exp(im*Pi/2)
 0.0 + 1.0im
 
 # Euler's identity : exp(iπ) + 1 == 0
 julia> exp(im*π) + 1
 0.0 + 1.2246467991473532e-16im
 
-julia> exp(im*PiTimes(1)) + 1
+julia> exp(im*Pi) + 1
 0.0 + 0.0im
 ```
 
-The function `exp(ix)` for a finite real `x` might also be computed using `cis`, as
+The function `exp(im*x)` for a finite real `x` might also be computed using `cis`, as
 ```julia
-julia> cis(PiTimes(1/2))
+julia> cis(Pi/2)
 0.0 + 1.0im
 ```
 
@@ -54,7 +56,7 @@ Hyperbolic functions work as expected:
 julia> cosh(im*π/2)
 6.123233995736766e-17 + 0.0im
 
-julia> cosh(im*PiTimes(1/2))
+julia> cosh(im*Pi/2)
 0.0 + 0.0im
 ```
 
