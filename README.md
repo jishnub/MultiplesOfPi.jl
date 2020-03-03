@@ -7,7 +7,7 @@
 
 # Introduction
 
-This package introduces the type `PiTimes` that automatically uses the functions `sinpi` and `cospi` instead of `sin` and `cos` to get accurate results. For example:
+This package introduces the type `PiTimes` that automatically uses the functions `sinpi` and `cospi` instead of `sin` and `cos` to produce accurate results by avoiding floating-point inaccuracies to some extent. For example:
 
 ```julia
 julia> cos(3π/2)
