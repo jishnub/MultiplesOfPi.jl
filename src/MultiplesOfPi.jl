@@ -7,6 +7,7 @@ struct PiTimes{T<:Real} <: AbstractIrrational
 end
 
 Base.:(<)(p::PiTimes,q::PiTimes) = p.x < q.x
+Base.:(==)(p::PiTimes,q::PiTimes) = p.x == q.x
 
 for T in (:BigFloat,:Float64,:Float32,:Float16)
 	eval(quote
@@ -21,5 +22,21 @@ end
 @inline Base.sincos(p::PiTimes) = (sin(p),cos(p))
 
 @inline Base.cis(p::PiTimes) = Complex(cos(p),sin(p))
+
+Base.:(+)(p1::PiTimes,p2::PiTimes) = PiTimes(p1.x+p2.x)
+
+Base.:(-)(p::PiTimes) = PiTimes(-p.x)
+Base.:(-)(p1::PiTimes,p2::PiTimes) = PiTimes(p1.x-p2.x)
+
+Base.:(/)(p1::PiTimes,p2::PiTimes) = p1.x/p2.x
+
+# Divisions involving pi retain type
+Base.:(/)(::Irrational{:π},p::PiTimes) = inv(p.x)
+Base.:(/)(p::PiTimes,::Irrational{:π}) = p.x
+
+Base.:(*)(p1::PiTimes,y::Real) = PiTimes(p1.x*y)
+Base.:(*)(y::Real,p1::PiTimes) = PiTimes(p1.x*y)
+Base.:(*)(p1::PiTimes,p2::PiTimes) = float(p1) * float(p2)
+Base.:(*)(z::Complex{Bool},p::PiTimes) = p*z # switch the orders to get to something that's non-ambiguous
 
 end # module

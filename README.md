@@ -23,6 +23,41 @@ julia> sin(PiTimes(-1))
 -0.0
 ```
 
+It automatically promotes to `Complex` as necessary, so we may compute complex exponentials exactly for some arguments:
+
+```julia
+julia> exp(im*π/2)
+6.123233995736766e-17 + 1.0im
+
+julia> exp(im*PiTimes(1/2))
+0.0 + 1.0im
+
+# Euler's identity : exp(iπ) + 1 == 0
+julia> exp(im*π) + 1
+0.0 + 1.2246467991473532e-16im
+
+julia> exp(im*PiTimes(1)) + 1
+0.0 + 0.0im
+```
+
+The function `exp(ix)` for a finite real `x` might also be computed using `cis`, as
+```julia
+julia> cis(PiTimes(1/2))
+0.0 + 1.0im
+```
+
+Hyperbolic functions work as expected:
+
+```julia
+# cosh(ix) = cos(x)
+# Should be exactly zero for x = π/2
+julia> cosh(im*π/2)
+6.123233995736766e-17 + 0.0im
+
+julia> cosh(im*PiTimes(1/2))
+0.0 + 0.0im
+```
+
 # Installation
 
 Install the package using 
@@ -32,7 +67,6 @@ pkg> add https://github.com/jishnub/MultiplesOfPi.jl.git
 
 julia> using MultiplesOfPi
 ```
-
 # To-do
 
-Add support for complex numbers
+Add support for `tan`
