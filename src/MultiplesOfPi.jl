@@ -39,4 +39,6 @@ Base.:(*)(y::Real,p1::PiTimes) = PiTimes(p1.x*y)
 Base.:(*)(p1::PiTimes,p2::PiTimes) = float(p1) * float(p2)
 Base.:(*)(z::Complex{Bool},p::PiTimes) = p*z # switch the orders to get to something that's non-ambiguous
 
+Base.one(::Type{PiTimes{T}}) where {T} = one(T)
+
 end # module

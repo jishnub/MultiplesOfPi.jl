@@ -18,6 +18,11 @@ using Test
             @test PiTimes(2) == PiTimes(2)            
         end
     end
+    @testset "one" begin
+        @test one(PiTimes{Int}) == one(Int)
+        @test one(PiTimes{Float64}) == one(Float64)
+        @test one(PiTimes{BigFloat}) == one(BigFloat)
+    end
     @testset "conversion" begin
         @test convert(Float64,PiTimes(1)) ≈ Float64(1π)
         @test Float64(PiTimes(1)) ≈ Float64(1)*π
@@ -72,22 +77,35 @@ using Test
         end
     end
     @testset "trigonometric functions" begin
-        x = 1.5
-        @test sin(PiTimes(x)) == sinpi(x) ≈ sin(π*x)
-        x = 1
-        @test cos(PiTimes(x)) == cospi(x) ≈ cos(π*x)
-        x = 1.1
-        @test cis(PiTimes(x)) == cospi(x) + im*sinpi(x) ≈ cos(π*x) + im*sin(π*x)
+        @testset "sin and cos" begin
+            x = 1.5
+            @test sin(PiTimes(x)) == sinpi(x) == -1 ≈ sin(π*x)
+            x = 1
+            @test cos(PiTimes(x)) == cospi(x) == -1 ≈ cos(π*x)
+            
+            a = sincos(PiTimes(x))
+            @test a[1] == sinpi(x)
+            @test a[2] == cospi(x)
+        end
 
-        a = sincos(PiTimes(x))
-        @test a[1] == sinpi(x)
-        @test a[2] == cospi(x)
+        @testset "complex exp" begin
+            x = 1.1
+            @test cis(PiTimes(x)) == cospi(x) + im*sinpi(x) ≈ cos(π*x) + im*sin(π*x)
 
-        @testset "exp" begin
             @test exp(im*PiTimes(0)) == cis(PiTimes(0)) == 1
             @test exp(im*PiTimes(1/2)) == cis(PiTimes(1/2)) == im
             @test exp(im*PiTimes(1)) == cis(PiTimes(1))== -1
             @test exp(im*PiTimes(3/2)) == cis(PiTimes(3/2)) == -im
+        end
+
+        @testset "sec and csc" begin
+            @test sec(PiTimes(1)) == -1
+            @test sec(PiTimes(2)) == 1
+            @test !isfinite(sec(PiTimes(1/2)))
+
+            @test csc(PiTimes(1/2)) == 1
+            @test csc(PiTimes(3/2)) == -1
+            @test !isfinite(csc(PiTimes(1))) 
         end
     end
     @testset "hyperbolic" begin
