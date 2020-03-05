@@ -23,6 +23,12 @@ julia> sin(-π)
 
 julia> sin(-Pi)
 -0.0
+
+julia> tan(π/2)
+1.633123935319537e16
+
+julia> tan(Pi/2)
+Inf
 ```
 
 It automatically promotes to `Complex` as necessary, so we may compute complex exponentials exactly for some arguments:
@@ -69,6 +75,3 @@ pkg> add https://github.com/jishnub/MultiplesOfPi.jl.git
 
 julia> using MultiplesOfPi
 ```
-# To-do
-
-Add support for `tan`
