@@ -200,7 +200,8 @@ end
         @test tanh(im*Pi/4) == im
         @test tanh(im*Pi/2) == im*Inf
         @test tanh(im*Pi/3) == im*tan(Pi/3)
-        @test tanh(2+im*Pi) ≈ tanh(2+im*π)
+        @test tanh((1+im)*Pi) == tanh((1+im)*π)
+        @test tanh(2+im*Pi) == tanh(2+im*π)
     end
 end
 
