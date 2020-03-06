@@ -109,6 +109,33 @@ end
         @test p//2 == PiTimes(p.x//2)
         @test Pi//2 == PiTimes(1//2)
     end
+
+    @testset "irrational" begin
+        @testset "pi" begin
+            @test Pi + π == 2Pi
+            @test π + Pi == 2Pi
+            @test Pi - π == 0
+            @test π - Pi == 0
+            @test π*Pi == π^2
+            @test Pi*π == π^2
+            @test Pi/π == 1
+            @test π/Pi == 1
+            @test Pi^π == π^π
+            @test π^Pi == π^π
+        end
+        @testset "e" begin
+            @test Pi + ℯ == π + ℯ
+            @test ℯ + Pi == ℯ + π
+            @test Pi - ℯ == π - ℯ
+            @test ℯ - Pi == ℯ - π
+            @test ℯ*Pi == ℯ*π
+            @test Pi*ℯ == π*ℯ
+            @test Pi/ℯ == π/ℯ
+            @test ℯ/Pi == ℯ/π
+            @test Pi^ℯ == π^ℯ
+            @test ℯ^Pi == ℯ^π
+        end
+    end
 end
 
 @testset "trigonometric functions" begin
@@ -186,6 +213,10 @@ end
             @test cot(nextfloat(0.0)*π) == cot(PiTimes(nextfloat(0.0)))
             @test cot(prevfloat(0.0)*π) == cot(PiTimes(prevfloat(0.0)))
         end
+    end
+
+    @testset "sinc" begin
+        @test sinc(Pi) == sinc(π)
     end
 end
 

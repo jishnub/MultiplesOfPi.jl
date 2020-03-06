@@ -29,6 +29,8 @@ for f in (:iszero,:isfinite,:isnan)
 	end)
 end
 
+# Unfortunately Irrational numbers do not have a multiplicative identity of the same type,
+# so we make do with something that works
 Base.one(::Type{PiTimes{T}}) where {T} = one(T)
 
 # Define trigonometric functions
@@ -57,10 +59,14 @@ end
 
 # Arithmetic operators
 
-Base.:(+)(p1::PiTimes,p2::PiTimes) = PiTimes(p1.x+p2.x)
+Base.:(+)(p1::PiTimes,p2::PiTimes) = PiTimes(p1.x + p2.x)
+Base.:(+)(p::PiTimes,::Irrational{:π}) = PiTimes(p.x + one(p.x))
+Base.:(+)(::Irrational{:π},p::PiTimes) = PiTimes(p.x + one(p.x))
 
 Base.:(-)(p::PiTimes) = PiTimes(-p.x)
 Base.:(-)(p1::PiTimes,p2::PiTimes) = PiTimes(p1.x-p2.x)
+Base.:(-)(p::PiTimes,::Irrational{:π}) = PiTimes(p.x - one(p.x))
+Base.:(-)(::Irrational{:π},p::PiTimes) = PiTimes(one(p.x) - p.x)
 
 Base.:(/)(p1::PiTimes,p2::PiTimes) = p1.x/p2.x
 Base.:(/)(p1::PiTimes,y::Real) = PiTimes(p1.x/y)
@@ -72,6 +78,11 @@ Base.:(*)(p1::PiTimes,y::Real) = PiTimes(p1.x*y)
 Base.:(*)(y::Real,p1::PiTimes) = PiTimes(p1.x*y)
 Base.:(*)(p1::PiTimes,p2::PiTimes) = float(p1) * float(p2)
 Base.:(*)(z::Complex{Bool},p::PiTimes) = p*z # switch the orders to get to something that's non-ambiguous
+
+for op in Symbol[:+,:-,:/,:*]
+	@eval Base.$op(p::PiTimes,x::AbstractIrrational) = $op(Float64(p),Float64(x))
+	@eval Base.$op(x::AbstractIrrational,p::PiTimes) = $op(Float64(x),Float64(p))
+end
 
 Base.:(//)(p::PiTimes,n) = PiTimes(p.x//n)
 

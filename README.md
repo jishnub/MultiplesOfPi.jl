@@ -13,6 +13,8 @@ This package introduces the type `PiTimes` that automatically uses the functions
 
 The number `π` is represented as an `Irrational` type in julia, and may be computed to an arbitrary degree of precision. In normal course of events it is converted to a float when it encounters another number, for example `2π` is computed by converting both `2` and `π` to floats and subsequently carrying out a floating-point multiplication. This is lossy, as both `2` and `π` may be represented with arbitrary precision. This package delays the conversion of the `π` to a float, treating it as a common factor in algebraic simplifications. This limits floating-point inaccuracies, especially if the terms multiplying `π` are exactly representable in binary. As an added advantage, it uses `sinpi` and `cospi` wherever possible to avoid having to convert `π` to a float altogether.
 
+The concept isn't unknown to julia as such, having been [discussed in 2013](https://github.com/JuliaLang/julia/pull/4112#issuecomment-22961778), but I don't know of an implementation.
+
 # Examples
 
 ## Arithmetic
@@ -91,3 +93,4 @@ pkg> add MultiplesOfPi
 # Related packages
 
 - [IrrationalExpressions.jl](https://github.com/jishnub/IrrationalExpressions.jl.git)
+- [Tau.jl](https://github.com/JuliaMath/Tau.jl)
