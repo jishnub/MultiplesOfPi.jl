@@ -31,6 +31,7 @@ end
 
 # Unfortunately Irrational numbers do not have a multiplicative identity of the same type,
 # so we make do with something that works
+# NOTE: This will be changed in the next minor release to one(::PiTimes) = true
 Base.one(::Type{PiTimes{T}}) where {T} = one(T)
 
 # Define trigonometric functions
