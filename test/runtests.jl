@@ -338,3 +338,11 @@ end
     @test isnan(PiTimes(NaN))
     @test iszero(PiTimes(0))
 end
+
+@testset "show" begin
+    io = IOBuffer()
+    show(io,Pi)
+    @test String(take!(io)) == "Pi"
+    show(io,2Pi)
+    @test String(take!(io)) == "2Pi"
+end
