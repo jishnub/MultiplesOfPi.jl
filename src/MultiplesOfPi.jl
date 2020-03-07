@@ -3,10 +3,20 @@ module MultiplesOfPi
 export PiTimes
 export Pi
 
+"""
+	PiTimes(x)
+
+Construct a number that behaves as `π*x` for a real `x`
+"""
 struct PiTimes{T<:Real} <: AbstractIrrational
 	x :: T
 end
 
+"""
+	Pi
+
+The number `PiTimes(1)`, numerically equivalent to `pi`
+"""
 const Pi = PiTimes(1)
 
 Base.:(<)(p::PiTimes,q::PiTimes) = p.x < q.x

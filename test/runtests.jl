@@ -94,40 +94,70 @@ end
             @test p*q ≈ (p.x*q.x)*π^2
         end
         @testset "Real" begin
-            @test p*2 === PiTimes(p.x*2)
-            @test 2*p === PiTimes(p.x*2)
-            @test 2p === PiTimes(p.x*2)
+            @testset "Int" begin
+                @test p*2 === PiTimes(p.x*2)
+                @test 2*p === PiTimes(p.x*2)
+                @test 2p === PiTimes(p.x*2)
+            end
+            @testset "Bool" begin
+                @test true*p === p
+                @test p*true === p
+                @test false*p === zero(p)
+                @test p*false === zero(p)
+            end
         end
-        @testset "Bool" begin
-            @test true*p === p
-            @test p*true === p
-            @test false*p === zero(p)
-            @test p*false === zero(p)
-        end
-        @testset "Complex{Bool}" begin
-            @test p * im === PiTimes(0) + PiTimes(p.x)*im 
-            @test im* p === PiTimes(0) + PiTimes(p.x)*im
-            @test Complex(true,false)*Pi === Pi + im*zero(Pi)
-            @test Complex(false,true)*Pi === zero(Pi) + im*Pi
-        end
+        
         @testset "Complex" begin
-            @test (1+im)*p === PiTimes(p.x) + PiTimes(p.x)*im
+            @testset "Complex{Bool}" begin
+                @test p * im === PiTimes(0) + PiTimes(p.x)*im 
+                @test im* p === PiTimes(0) + PiTimes(p.x)*im
+                @test Complex(true,false)*Pi === Pi + im*zero(Pi)
+                @test Complex(false,true)*Pi === zero(Pi) + im*Pi
+                @test Pi*Complex(false,true) === zero(Pi) + im*Pi
+            end
+            @testset "Complex{Int}" begin
+                @test (1+im)*p === PiTimes(p.x) + PiTimes(p.x)*im
+                @test p*(1+im) === PiTimes(p.x) + PiTimes(p.x)*im
+            end
         end
     end
 
     @testset "division" begin
-        @test p/p == 1
-        @test p/q == p.x/q.x == 3/4 # works as 1/4 can be stored exactly
-        @test q/p == q.x/p.x
-
-        @test p/2 === PiTimes(p.x/2)
-
-        @test p/π === float(p.x)
-        @test PiTimes(7.3)/π === 7.3
-        @test π/PiTimes(1/7.3) ≈ 7.3 # within rounding errors
-        @test π/PiTimes(1//7) === float(7)
-
-        @test PiTimes(3)/4 === PiTimes(3/4)
+        @testset "PiTimes" begin
+            @test p/p === p.x/p.x
+            @test p/q === p.x/q.x == 3/4 # works as 1/4 can be stored exactly
+            @test q/p === q.x/p.x
+        end
+        @testset "Real" begin
+            @testset "Int" begin
+                @test p/2 === PiTimes(p.x/2)
+                @test PiTimes(3)/4 === PiTimes(3/4)
+            end
+            @testset "Bool" begin
+                @test p/true === PiTimes(p.x/1)
+                @test p/false === PiTimes(Inf)
+                @test true/Pi === true/π
+                @test false/Pi === 0.0
+            end
+        end
+        @testset "pi" begin
+            @test p/π === float(p.x)
+            @test PiTimes(7.3)/π === 7.3
+            @test π/PiTimes(1/7.3) ≈ 7.3 # within rounding errors
+            @test π/PiTimes(1//7) === float(7)
+        end
+        @testset "Complex" begin
+            @testset "Complex{Bool}" begin
+                @test p/im === Complex(PiTimes(zero(Float64)),PiTimes(-p.x/1))
+                @test p/Complex(true,false) === Complex(PiTimes(p.x/1),PiTimes(-zero(Float64)))
+                @test im/Pi === im/π
+                @test Complex(true,false)/Pi === Complex(true,false)/π
+            end
+            @testset "Complex{Int}" begin
+                @test p/(1+im) === Complex(PiTimes(1.5),-PiTimes(1.5))
+                @test (1+im)/Pi === (1+im)/π
+            end
+        end
     end
 
     @testset "Rational" begin
@@ -135,7 +165,7 @@ end
         @test Pi//2 === PiTimes(1//2)
     end
 
-    @testset "irrational" begin
+    @testset "Irrational" begin
         @testset "pi" begin
             @test Pi + π === 2Pi
             @test π + Pi === 2Pi
