@@ -66,6 +66,7 @@ end
         end
         @test promote_rule(PiTimes{Int},Irrational{:π}) === PiTimes{Int}
         @test promote_rule(PiTimes{Float64},Irrational{:π}) === PiTimes{Float64}
+        @test promote_rule(Irrational{:π},PiTimes{Float64}) === PiTimes{Float64}
     end
     @testset "convert" begin
         @testset "to float" begin
