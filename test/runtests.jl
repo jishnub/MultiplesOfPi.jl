@@ -346,4 +346,10 @@ end
     @test String(take!(io)) == "Pi"
     show(io,2Pi)
     @test String(take!(io)) == "2Pi"
+    show(io,0*Pi)
+    @test String(take!(io)) == "0"
+    show(io,im*Pi)
+    @test String(take!(io)) == "0 + Pi*im"
+    show(io,Pi + im*(2//3)Pi)
+    @test String(take!(io)) == "Pi + 2//3Pi*im"
 end

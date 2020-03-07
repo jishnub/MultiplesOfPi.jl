@@ -124,7 +124,8 @@ Base.convert(::Type{PiTimes{T}},p::PiTimes) where {T} = PiTimes{T}(p.x)
 
 function Base.show(io::IO,p::PiTimes)
 	pxstr = isone(p.x) ? "" : string(p.x)
-	print(io,pxstr,"Pi")
+	str = iszero(p) ? string(p.x) : pxstr*"Pi"
+	print(io,str)
 end
 
 end # module
