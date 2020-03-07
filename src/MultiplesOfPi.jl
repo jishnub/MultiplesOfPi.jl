@@ -99,7 +99,7 @@ end
 
 Base.:(//)(p::PiTimes,n) = PiTimes(p.x//n)
 Base.:(//)(n,p::PiTimes) = PiTimes(n//p.x)
-Base.:(//)(p::PiTimes,q::PiTimes) = (p.x//q.x)*PiTimes(1)
+Base.:(//)(p::PiTimes,q::PiTimes) = (p.x-q.x)*PiTimes(1)
 
 # Conversion and promotion
 
