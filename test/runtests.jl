@@ -204,6 +204,8 @@ end
     @testset "Rational" begin
         @test p//2 === PiTimes(p.x//2)
         @test Pi//2 === PiTimes(1//2)
+        @test 1//Pi === 1//PiTimes(1)
+        @test 2//p === 2//PiTimes(p.x)
     end
 
     @testset "Irrational" begin
