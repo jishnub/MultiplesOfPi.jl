@@ -32,7 +32,11 @@ end
 # Unfortunately Irrational numbers do not have a multiplicative identity of the same type,
 # so we make do with something that works
 # NOTE: This will be changed in the next minor release to one(::PiTimes) = true
+Base.one(::PiTimes{T}) where {T} = one(PiTimes{T})
 Base.one(::Type{PiTimes{T}}) where {T} = one(T)
+
+Base.zero(::PiTimes{T}) where {T} = zero(PiTimes{T})
+Base.zero(::Type{PiTimes{T}}) where {T} = PiTimes(zero(T))
 
 # Define trigonometric functions
 
@@ -78,7 +82,10 @@ Base.:(/)(p::PiTimes,::Irrational{:π}) = float(p.x)
 Base.:(*)(p1::PiTimes,y::Real) = PiTimes(p1.x*y)
 Base.:(*)(y::Real,p1::PiTimes) = PiTimes(p1.x*y)
 Base.:(*)(p1::PiTimes,p2::PiTimes) = float(p1) * float(p2)
-Base.:(*)(z::Complex{Bool},p::PiTimes) = p*z # switch the orders to get to something that's non-ambiguous
+Base.:(*)(z::Complex{Bool},p::PiTimes) = Complex(real(z)*p,imag(z)*p)
+Base.:(*)(p::PiTimes,z::Complex{Bool}) = Complex(real(z)*p,imag(z)*p)
+Base.:(*)(x::Bool,p::PiTimes) = ifelse(x,p,zero(p))
+Base.:(*)(p::PiTimes,x::Bool) = ifelse(x,p,zero(p))
 
 for op in Symbol[:+,:-,:/,:*]
 	@eval Base.$op(p::PiTimes,x::AbstractIrrational) = $op(Float64(p),Float64(x))

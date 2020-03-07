@@ -32,17 +32,26 @@ end
     @testset "one" begin
         for T in (Float16,Float32,Float64,Int8,Int16,Int32,Int64,Int128)
             @test one(PiTimes{T}) === one(T)
+            @test one(PiTimes{T}(0)) === one(T)
         end
         for T in (BigInt,BigFloat)
             @test one(PiTimes{T}) == one(T)
+            @test one(PiTimes{T}(0)) == one(T)
         end
         @test one(Pi) == 1
     end
     @testset "zero" begin
-        @test zero(Pi) == 0
-        @test zero(typeof(Pi)) == 0
-        for T in (Float16,Float32,Float64,BigFloat,Int8,Int16,Int32,Int64,Int128,BigInt)
+        @test zero(Pi) === PiTimes(0) == 0
+        @test zero(typeof(Pi)) === PiTimes(0) == 0
+        for T in (Float16,Float32,Float64,Int8,Int16,Int32,Int64,Int128)
             @test zero(PiTimes{T}) isa PiTimes{T}
+            @test zero(PiTimes{T}(1)) isa PiTimes{T}
+            @test zero(PiTimes{T}(1)) === PiTimes{T}(0)
+        end
+        for T in (BigInt,BigFloat)
+            @test zero(PiTimes{T}) isa PiTimes{T}
+            @test zero(PiTimes{T}(1)) isa PiTimes{T}
+            @test zero(PiTimes{T}(1)) == PiTimes{T}(0)
         end
     end
 end
@@ -66,28 +75,44 @@ end
 
     @testset "negation" begin
         @test -p isa PiTimes{Int}
-        @test -p == PiTimes(-p.x)
+        @test -p === PiTimes(-p.x)
     end 
 
     @testset "addition" begin
-        @test p + p == PiTimes(2p.x)
-        @test p + q == PiTimes(p.x + q.x)
+        @test p + p === PiTimes(2p.x)
+        @test p + q === PiTimes(p.x + q.x)
     end
 
     @testset "subtraction" begin
-        @test p - p == PiTimes(0)
-        @test p - q == PiTimes(p.x - q.x)
+        @test p - p === PiTimes(0)
+        @test p - q === PiTimes(p.x - q.x)
     end
 
     @testset "multiplication" begin
-        @test p*2 == PiTimes(p.x*2)
-        @test 2*p == PiTimes(p.x*2)
-        @test 2p == PiTimes(p.x*2)
-        @test p*p ≈ (p.x*π)^2
-        @test p*q ≈ (p.x*q.x)*π^2
-        @test p * im == PiTimes(0) + PiTimes(p.x)*im 
-        @test im* p == PiTimes(0) + PiTimes(p.x)*im
-        @test (1+im)*p == PiTimes(p.x) + PiTimes(p.x)*im
+        @testset "PiTimes" begin
+            @test p*p ≈ (p.x*π)^2
+            @test p*q ≈ (p.x*q.x)*π^2
+        end
+        @testset "Real" begin
+            @test p*2 === PiTimes(p.x*2)
+            @test 2*p === PiTimes(p.x*2)
+            @test 2p === PiTimes(p.x*2)
+        end
+        @testset "Bool" begin
+            @test true*p === p
+            @test p*true === p
+            @test false*p === zero(p)
+            @test p*false === zero(p)
+        end
+        @testset "Complex{Bool}" begin
+            @test p * im === PiTimes(0) + PiTimes(p.x)*im 
+            @test im* p === PiTimes(0) + PiTimes(p.x)*im
+            @test Complex(true,false)*Pi === Pi + im*zero(Pi)
+            @test Complex(false,true)*Pi === zero(Pi) + im*Pi
+        end
+        @testset "Complex" begin
+            @test (1+im)*p === PiTimes(p.x) + PiTimes(p.x)*im
+        end
     end
 
     @testset "division" begin
@@ -95,45 +120,45 @@ end
         @test p/q == p.x/q.x == 3/4 # works as 1/4 can be stored exactly
         @test q/p == q.x/p.x
 
-        @test p/2 == PiTimes(p.x/2)
+        @test p/2 === PiTimes(p.x/2)
 
         @test p/π === float(p.x)
         @test PiTimes(7.3)/π === 7.3
         @test π/PiTimes(1/7.3) ≈ 7.3 # within rounding errors
         @test π/PiTimes(1//7) === float(7)
 
-        @test PiTimes(3)/4 == PiTimes(3/4)
+        @test PiTimes(3)/4 === PiTimes(3/4)
     end
 
     @testset "Rational" begin
-        @test p//2 == PiTimes(p.x//2)
-        @test Pi//2 == PiTimes(1//2)
+        @test p//2 === PiTimes(p.x//2)
+        @test Pi//2 === PiTimes(1//2)
     end
 
     @testset "irrational" begin
         @testset "pi" begin
-            @test Pi + π == 2Pi
-            @test π + Pi == 2Pi
-            @test Pi - π == 0
-            @test π - Pi == 0
-            @test π*Pi == π^2
-            @test Pi*π == π^2
-            @test Pi/π == 1
-            @test π/Pi == 1
-            @test Pi^π == π^π
-            @test π^Pi == π^π
+            @test Pi + π === 2Pi
+            @test π + Pi === 2Pi
+            @test Pi - π === zero(Pi) == 0
+            @test π - Pi === zero(Pi) == 0
+            @test π*Pi === π^2
+            @test Pi*π === π^2
+            @test Pi/π === π/π
+            @test π/Pi === π/π
+            @test Pi^π === π^π
+            @test π^Pi === π^π
         end
         @testset "e" begin
-            @test Pi + ℯ == π + ℯ
-            @test ℯ + Pi == ℯ + π
-            @test Pi - ℯ == π - ℯ
-            @test ℯ - Pi == ℯ - π
-            @test ℯ*Pi == ℯ*π
-            @test Pi*ℯ == π*ℯ
-            @test Pi/ℯ == π/ℯ
-            @test ℯ/Pi == ℯ/π
-            @test Pi^ℯ == π^ℯ
-            @test ℯ^Pi == ℯ^π
+            @test Pi + ℯ === π + ℯ
+            @test ℯ + Pi === ℯ + π
+            @test Pi - ℯ === π - ℯ
+            @test ℯ - Pi === ℯ - π
+            @test ℯ*Pi === ℯ*π
+            @test Pi*ℯ === π*ℯ
+            @test Pi/ℯ === π/ℯ
+            @test ℯ/Pi === ℯ/π
+            @test Pi^ℯ === π^ℯ
+            @test ℯ^Pi === ℯ^π
         end
     end
 end
