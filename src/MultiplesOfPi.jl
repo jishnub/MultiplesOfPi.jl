@@ -98,6 +98,7 @@ for op in Symbol[:+,:-,:/,:*]
 end
 
 Base.:(//)(p::PiTimes,n) = PiTimes(p.x//n)
+Base.:(//)(n,p::PiTimes) = PiTimes(n//p.x)
 
 # Conversion and promotion
 
