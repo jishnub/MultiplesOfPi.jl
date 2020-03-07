@@ -30,15 +30,11 @@ end
 
 @testset "zero and one" begin
     @testset "one" begin
-        for T in (Float16,Float32,Float64,Int8,Int16,Int32,Int64,Int128)
-            @test one(PiTimes{T}) === one(T)
-            @test one(PiTimes{T}(0)) === one(T)
+        for T in (Float16,Float32,Float64,Int8,Int16,Int32,Int64,Int128,BigInt,BigFloat)
+            @test one(PiTimes{T}) === true
+            @test one(PiTimes{T}(0)) === true
         end
-        for T in (BigInt,BigFloat)
-            @test one(PiTimes{T}) == one(T)
-            @test one(PiTimes{T}(0)) == one(T)
-        end
-        @test one(Pi) == 1
+        @test one(Pi) === true
     end
     @testset "zero" begin
         @test zero(Pi) === PiTimes(0) == 0
@@ -57,16 +53,60 @@ end
 end
 
 @testset "conversion" begin
-    @test convert(Float64,PiTimes(1)) ≈ Float64(1π)
-    @test Float64(PiTimes(1)) ≈ Float64(1)*π
-    @test convert(Float64,PiTimes(2)) ≈ Float64(2π)
-    @test Float64(PiTimes(2)) ≈ Float64(2)*π
-    @test convert(BigFloat,PiTimes(1)) ≈ BigFloat(1)*π
-    @test BigFloat(PiTimes(1)) ≈ BigFloat(1)*π
-    @test convert(Float32,PiTimes(1)) ≈ Float32(1)*π
-    @test Float32(PiTimes(1)) ≈ Float32(1)*π
-    @test convert(Float16,PiTimes(1)) ≈ Float16(1)*π
-    @test Float16(PiTimes(1)) ≈ Float16(1)*π
+    @testset "promote_rule" begin
+        for t in (Int8, Int16, Int32, Int64, Int128, Bool, UInt8, UInt16, UInt32, UInt64, UInt128)
+                @test promote_rule(PiTimes{Float16},PiTimes{t}) === PiTimes{Float16}
+                @test promote_rule(PiTimes{t},PiTimes{Float16}) === PiTimes{Float16}
+        end
+        for t1 in (Float32, Float64)
+            for t2 in (Int8, Int16, Int32, Int64, Bool, UInt8, UInt16, UInt32, UInt64)
+                @test promote_rule(PiTimes{t1},PiTimes{t2}) === PiTimes{t1}
+                @test promote_rule(PiTimes{t2},PiTimes{t1}) === PiTimes{t1}
+            end
+        end
+        @test promote_rule(PiTimes{Int},Irrational{:π}) === PiTimes{Int}
+        @test promote_rule(PiTimes{Float64},Irrational{:π}) === PiTimes{Float64}
+    end
+    @testset "convert" begin
+        @testset "to float" begin
+            @test convert(Float64,PiTimes(1)) ≈ Float64(1π)
+            @test Float64(PiTimes(1)) ≈ Float64(1)*π
+            @test convert(Float64,PiTimes(2)) ≈ Float64(2π)
+            @test Float64(PiTimes(2)) ≈ Float64(2)*π
+            @test convert(BigFloat,PiTimes(1)) ≈ BigFloat(1)*π
+            @test BigFloat(PiTimes(1)) ≈ BigFloat(1)*π
+            @test convert(Float32,PiTimes(1)) ≈ Float32(1)*π
+            @test Float32(PiTimes(1)) ≈ Float32(1)*π
+            @test convert(Float16,PiTimes(1)) ≈ Float16(1)*π
+            @test Float16(PiTimes(1)) ≈ Float16(1)*π
+        end
+        @testset "from real" begin
+            @test convert(PiTimes{Int},π) === PiTimes(1)
+            @test convert(PiTimes{Float64},π) === PiTimes(1.0)
+            @test convert(PiTimes,π) === PiTimes(1.0)
+
+            @test convert(PiTimes,2) === PiTimes(2/π)
+            for t in (Float16,Float32,Float64)
+                @test convert(PiTimes{t},2) === PiTimes{t}(2/π)
+            end
+            convert(PiTimes{BigFloat},2) === PiTimes{BigFloat}(2/π)
+        end
+        @testset "PiTimes" begin
+            for t in (Int8, Int16, Int32, Int64, Int128, Bool, UInt8, UInt16, UInt32, UInt64, UInt128)
+                @test convert(PiTimes{Float16},PiTimes{t}(0)) === PiTimes(Float16(0))
+            end
+            for t1 in (Float32, Float64)
+                for t2 in (Int8, Int16, Int32, Int64, Bool, UInt8, UInt16, UInt32, UInt64)
+                    @test convert(PiTimes{t1},PiTimes{t2}(0)) === PiTimes(t1(0))
+                end
+            end
+        end
+        @testset "Complex" begin
+            @test Complex(Pi,Pi) == Pi + im*Pi
+            @test Complex(Pi,π) == Pi + im*Pi
+            @test Complex(π,Pi) == Pi + im*Pi
+        end
+    end
 end
 
 @testset "arithmetic" begin

@@ -28,22 +28,17 @@ Base.:(==)(p::PiTimes,::Irrational{:π}) = isone(p.x)
 Base.:(==)(::Irrational{:π},p::PiTimes) = isone(p.x)
 
 for T in (:BigFloat,:Float64,:Float32,:Float16)
-	eval(quote
-		Base.$T(p::PiTimes) = π*$T(p.x)
-	end)
+	@eval Base.$T(p::PiTimes) = π*$T(p.x)
 end
 
 for f in (:iszero,:isfinite,:isnan)
-	eval(quote
-		Base.$f(p::PiTimes) = $f(p.x)
-	end)
+	@eval Base.$f(p::PiTimes) = $f(p.x)
 end
 
 # Unfortunately Irrational numbers do not have a multiplicative identity of the same type,
 # so we make do with something that works
-# NOTE: This will be changed in the next minor release to one(::PiTimes) = true
 Base.one(::PiTimes{T}) where {T} = one(PiTimes{T})
-Base.one(::Type{PiTimes{T}}) where {T} = one(T)
+Base.one(::Type{PiTimes{T}}) where {T} = true
 
 Base.zero(::PiTimes{T}) where {T} = zero(PiTimes{T})
 Base.zero(::Type{PiTimes{T}}) where {T} = PiTimes(zero(T))
@@ -103,5 +98,28 @@ for op in Symbol[:+,:-,:/,:*]
 end
 
 Base.:(//)(p::PiTimes,n) = PiTimes(p.x//n)
+
+# Conversion and promotion
+
+for t in (Int8, Int16, Int32, Int64, Int128, Bool, UInt8, UInt16, UInt32, UInt64, UInt128)
+    @eval Base.promote_rule(::Type{PiTimes{Float16}}, ::Type{PiTimes{$t}}) = PiTimes{Float16}
+    @eval Base.promote_rule(::Type{PiTimes{$t}},::Type{PiTimes{Float16}}) = PiTimes{Float16}
+end
+
+for t1 in (Float32, Float64)
+    for t2 in (Int8, Int16, Int32, Int64, Bool, UInt8, UInt16, UInt32, UInt64)
+        @eval begin
+            Base.promote_rule(::Type{PiTimes{$t1}}, ::Type{PiTimes{$t2}}) = PiTimes{$t1}
+            Base.promote_rule(::Type{PiTimes{$t2}}, ::Type{PiTimes{$t1}}) = PiTimes{$t1}
+        end
+    end
+end
+
+Base.promote_rule(::Type{PiTimes{T}}, ::Type{Irrational{:π}}) where {T} = PiTimes{T}
+Base.promote_rule(::Type{Irrational{:π}}, ::Type{PiTimes{T}}) where {T} = PiTimes{T}
+
+Base.convert(::Type{PiTimes},x::Real) = PiTimes(x/π)
+Base.convert(::Type{PiTimes{T}},x::Real) where {T} = PiTimes{T}(x/π)
+Base.convert(::Type{PiTimes{T}},p::PiTimes) where {T} = PiTimes{T}(p.x)
 
 end # module
