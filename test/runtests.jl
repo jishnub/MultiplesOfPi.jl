@@ -752,8 +752,8 @@ end
             @test tan(Pi^2) === tan(π^2)
             @test cot(Pi^2) === cot(π^2)
             @test sinc(Pi^2) === sinc(π^2)
-            @test sinc(Pi^-2) ≈ sinc(π^-2) # should be equal ideally
-            @test sinc(1/Pi^2) ≈ sinc(π^-2) # should be equal ideally
+            @test sinc(Pi^-2) ≈ sinc((1/π)^2) # should be equal ideally
+            @test sinc(1/Pi^2) ≈ sinc((1/π)^2) # should be equal ideally
             @test sec(Pi^2) === sec(π^2)
             @test csc(Pi^2) === csc(π^2)
         end
