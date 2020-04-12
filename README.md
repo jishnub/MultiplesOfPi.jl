@@ -92,3 +92,4 @@ pkg> add MultiplesOfPi
 
 - [IrrationalExpressions.jl](https://github.com/jishnub/IrrationalExpressions.jl.git)
 - [Tau.jl](https://github.com/JuliaMath/Tau.jl)
+- [UnitfulAngles.jl](https://github.com/yakir12/UnitfulAngles.jl)
