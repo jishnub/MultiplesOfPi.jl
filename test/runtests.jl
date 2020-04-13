@@ -29,6 +29,7 @@ using Test
 
         @test PiTimes(pi) === PiExpTimes{2}(1)
         @test PiExpTimes{2}(pi) === PiExpTimes{3}(1)
+        @test PiExpTimes{2,Irrational{:π}}(π) == PiExpTimes{3}(1)
 
         @test PiExpTimes{2}(π) == PiExpTimes{3}(1)
 
@@ -101,8 +102,8 @@ end
             @test Pi² != Pi³
             @test Pi³ != Pi²
 
-            @test Pi² != π
-            @test π != Pi²
+            @test !(Pi² == π)
+            @test !(π == Pi²)
 
             @test z² == z³
             @test z² == 0
@@ -215,11 +216,15 @@ end
             end
             @testset "PiExpTimes{2} and PiExpTimes{2}" begin
                 for t in (Int8, Int16, Int32, Int64, Int128, Bool, UInt8, UInt16, UInt32, UInt64, UInt128)
+                        @test promote_rule(PiExpTimes{2,Float16},PiExpTimes{2,t}) === PiExpTimes{2,Float16}
+                        @test promote_rule(PiExpTimes{2,t},PiExpTimes{2,Float16}) === PiExpTimes{2,Float16}
                         @test promote_type(PiExpTimes{2,Float16},PiExpTimes{2,t}) === PiExpTimes{2,Float16}
                         @test promote_type(PiExpTimes{2,t},PiExpTimes{2,Float16}) === PiExpTimes{2,Float16}
                 end
                 for t1 in (Float32, Float64)
                     for t2 in (Int8, Int16, Int32, Int64, Bool, UInt8, UInt16, UInt32, UInt64)
+                        @test promote_rule(PiExpTimes{2,t1},PiExpTimes{2,t2}) === PiExpTimes{2,t1}
+                        @test promote_rule(PiExpTimes{2,t2},PiExpTimes{2,t1}) === PiExpTimes{2,t1}
                         @test promote_type(PiExpTimes{2,t1},PiExpTimes{2,t2}) === PiExpTimes{2,t1}
                         @test promote_type(PiExpTimes{2,t2},PiExpTimes{2,t1}) === PiExpTimes{2,t1}
                     end
@@ -227,12 +232,16 @@ end
             end
             @testset "PiExpTimes{2} and PiTimes" begin
                 for t in (Int8, Int16, Int32, Int64, Int128, Bool, UInt8, UInt16, UInt32, UInt64, UInt128)
+                        @test promote_rule(PiExpTimes{2,Float16},PiTimes{t}) === Float64
+                        @test promote_rule(PiTimes{t},PiExpTimes{2,Float16}) === Float64
                         @test promote_type(PiExpTimes{2,Float16},PiTimes{t}) === Float64
                         @test promote_type(PiTimes{t},PiExpTimes{2,Float16}) === Float64
                 end
                 for t1 in (Float32, Float64)
                     for t2 in (Int8, Int16, Int32, Int64, Bool, UInt8, UInt16, UInt32, UInt64)
-                        @test promote_type(PiExpTimes{2,t1},PiTimes{t2}) === Float64
+                        @test promote_rule(PiExpTimes{2,t1},PiTimes{t2}) === Float64
+                        @test promote_rule(PiTimes{t2},PiExpTimes{2,t1}) === Float64
+                        @test promote_type(PiTimes{t2},PiExpTimes{2,t1}) === Float64
                         @test promote_type(PiTimes{t2},PiExpTimes{2,t1}) === Float64
                     end
                 end
@@ -240,20 +249,43 @@ end
         end
 
         @testset "PiExpTimes and Irrational" begin
+            @test promote_rule(PiTimes{Int},Irrational{:π}) === PiTimes{Int}
+            @test promote_rule(Irrational{:π},PiTimes{Int}) === PiTimes{Int}
             @test promote_type(PiTimes{Int},Irrational{:π}) === PiTimes{Int}
             @test promote_type(Irrational{:π},PiTimes{Int}) === PiTimes{Int}
+            
+            @test promote_rule(PiTimes{Float64},Irrational{:π}) === PiTimes{Float64}
+            @test promote_rule(Irrational{:π},PiTimes{Float64}) === PiTimes{Float64}
             @test promote_type(PiTimes{Float64},Irrational{:π}) === PiTimes{Float64}
             @test promote_type(Irrational{:π},PiTimes{Float64}) === PiTimes{Float64}
+            
+            @test promote_rule(PiExpTimes{2,Int},Irrational{:π}) === Float64
+            @test promote_rule(Irrational{:π},PiExpTimes{2,Int}) === Float64
+            @test promote_type(PiExpTimes{2,Int},Irrational{:π}) === Float64
+            @test promote_type(Irrational{:π},PiExpTimes{2,Int}) === Float64
+            
+            @test promote_rule(PiExpTimes{2,Float64},Irrational{:π}) === Float64
+            @test promote_rule(Irrational{:π},PiExpTimes{2,Float64}) === Float64
+            @test promote_type(PiExpTimes{2,Float64},Irrational{:π}) === Float64
+            @test promote_type(Irrational{:π},PiExpTimes{2,Float64}) === Float64
         end
         
         @testset "Complex{PiExpTimes}" begin
             @testset "Complex{PiTimes} and Irrational{:π}" begin
+                @test promote_rule(Complex{PiTimes{Int}},Irrational{:π}) === Complex{PiTimes{Int}}
+                @test promote_rule(Irrational{:π},Complex{PiTimes{Int}}) === Complex{PiTimes{Int}}
+                @test promote_rule(Complex{PiTimes{Float64}},Irrational{:π}) === Complex{PiTimes{Float64}}
+                @test promote_rule(Irrational{:π},Complex{PiTimes{Float64}}) === Complex{PiTimes{Float64}}
                 @test promote_type(Complex{PiTimes{Int}},Irrational{:π}) === Complex{PiTimes{Int}}
                 @test promote_type(Irrational{:π},Complex{PiTimes{Int}}) === Complex{PiTimes{Int}}
                 @test promote_type(Complex{PiTimes{Float64}},Irrational{:π}) === Complex{PiTimes{Float64}}
                 @test promote_type(Irrational{:π},Complex{PiTimes{Float64}}) === Complex{PiTimes{Float64}}
             end
             @testset "Complex{PiExpTimes} and Irrational{:π}" begin
+                @test promote_rule(Complex{PiExpTimes{2,Int}},Irrational{:π}) === Complex{Float64}
+                @test promote_rule(Irrational{:π},Complex{PiExpTimes{2,Int}}) === Complex{Float64}
+                @test promote_rule(Complex{PiExpTimes{2,Float64}},Irrational{:π}) === Complex{Float64}
+                @test promote_rule(Irrational{:π},Complex{PiExpTimes{2,Float64}}) === Complex{Float64}
                 @test promote_type(Complex{PiExpTimes{2,Int}},Irrational{:π}) === Complex{Float64}
                 @test promote_type(Irrational{:π},Complex{PiExpTimes{2,Int}}) === Complex{Float64}
                 @test promote_type(Complex{PiExpTimes{2,Float64}},Irrational{:π}) === Complex{Float64}
@@ -276,16 +308,29 @@ end
                 @test Float16(PiTimes(1)) === Float16(1)*π
             end
             @testset "PiExpTimes" begin
-                @test convert(Float64,PiExpTimes{2}(1)) === Float64(π^2)
-                @test Float64(PiExpTimes{2}(1)) === Float64(1)*π^2
-                @test convert(Float64,PiExpTimes{2}(2)) === Float64(2π^2)
-                @test Float64(PiExpTimes{2}(2)) === Float64(2)*π^2
+                @test convert(Float64,PiExpTimes{2}(1)) === Float64(π*π)
+                @test Float64(PiExpTimes{2}(1)) === Float64(1)*π*π
+                @test convert(Float64,PiExpTimes{2}(2)) === Float64(2π*π)
+                @test Float64(PiExpTimes{2}(2)) === Float64(2)*π*π
                 @test convert(BigFloat,PiExpTimes{2}(1)) == BigFloat(1)*π*π
                 @test BigFloat(PiExpTimes{2}(1)) == BigFloat(1)*π*π
                 @test convert(Float32,PiExpTimes{2}(1)) === Float32(1)*π*π
                 @test Float32(PiExpTimes{2}(1)) === Float32(1)*π*π
                 @test convert(Float16,PiExpTimes{2}(1)) === Float16(1)*π*π
                 @test Float16(PiExpTimes{2}(1)) === Float16(1)*π*π
+
+                @test AbstractFloat(PiExpTimes{2}(1)) === Float64(π*π)
+                @test float(PiExpTimes{2}(1)) === Float64(π*π)
+
+                @test Float64(PiExpTimes{0,Int}(1)) === Float64(1)
+                @test Float32(PiExpTimes{0,Int}(1)) === Float32(1)
+                @test Float16(PiExpTimes{0,Int}(1)) === Float16(1)
+                @test convert(Float64,PiExpTimes{0,Int}(1)) === Float64(1)
+                @test convert(Float32,PiExpTimes{0,Int}(1)) === Float32(1)
+                @test convert(Float16,PiExpTimes{0,Int}(1)) === Float16(1)
+
+                @test AbstractFloat(PiExpTimes{0,Int}(1)) === Float64(1)
+                @test float(PiExpTimes{0,Int}(1)) === Float64(1)
             end
         end
         @testset "Real to PiExpTimes" begin
@@ -336,6 +381,7 @@ end
                 @test convert(PiExpTimes{2},Pi^2) === Pi^2
                 @test convert(PiExpTimes{2,Float64},Pi^2) === 1.0*Pi^2
                 @test convert(PiExpTimes{2,Int},Pi^2) === Pi^2
+                @test convert(PiExpTimes{2,Int},PiExpTimes{2,Int}(2)) === PiExpTimes{2,Int}(2)
                 @test convert(PiExpTimes{2},Pi^3) === PiExpTimes{2}(float(π))
                 @test convert(PiExpTimes{2,Float64},Pi) === PiExpTimes{2}(1/π)
                 @test convert(PiExpTimes{2,Float64},Pi^2) === PiExpTimes{2}(1.0)
@@ -356,12 +402,14 @@ end
     p = PiTimes(3)
     q = PiTimes(4)
     r = PiExpTimes{2}(4)
+    z = PiExpTimes{0,Int}(3)
 
     @testset "negation" begin
         @test -p isa PiTimes{Int}
         @test -r isa PiExpTimes{2,Int}
         @test -p === PiTimes(-p.x)
         @test -r === PiExpTimes{2}(-r.x)
+        @test -z === -z.x
     end 
 
     @testset "addition" begin
@@ -369,6 +417,7 @@ end
         @test p + q === PiTimes(p.x + q.x)
         @test r + r === PiExpTimes{2}(2r.x)
         @test p + r === float(p) + float(r)
+        @test z + z === 2z.x
     end
 
     @testset "subtraction" begin
@@ -376,6 +425,7 @@ end
         @test p - q === PiTimes(p.x - q.x)
         @test r - r === PiExpTimes{2}(zero(r.x)) == 0
         @test p - r === float(p) - float(r)
+        @test z - z === zero(z.x)
     end
 
     @testset "multiplication" begin
