@@ -7,7 +7,16 @@
 
 # Introduction
 
-This package introduces the type `PiTimes` that automatically uses the functions `sinpi` and `cospi` instead of `sin` and `cos` to produce accurate results by avoiding floating-point inaccuracies to some extent. It also provides the constant `Pi` for convenience, defined as `PiTimes(1)`, which behaves like `pi` except it produces results with higher accuracy in certain trigonometric contexts.
+This package exports the type `PiExpTimes{N}` that behaves as a multipying factor of `π^N`, and the type `PiTimes` that is aliased to `PiExpTimes{1}`. It also provides the constant `Pi` for convenience, defined as `PiTimes(1)`, which behaves like `π` except it produces results with higher accuracy in certain trigonometric and algebraic contexts. 
+
+In most scenarios the numbers `Pi` and `pi` are interchangable.
+
+```julia
+julia> Pi^2 == π^2
+true
+```
+
+It's usually possible, and cleaner, to express mathematical relations in terms of `Pi` instead of the more cumbersome `PiExpTimes`, and is recommended unless it's specifically necessary.
 
 ## Rationale
 
@@ -27,9 +36,36 @@ julia> (1//3)Pi + (4//3)Pi == (5//3)Pi
 true
 ```
 
+We may also simplify algebraic expressions involving powers of `Pi` as 
+
+```julia
+julia> (2Pi^2//3) // (4Pi//5)
+(5//6)Pi
+
+julia> Pi^-2 / 4Pi^3
+0.25*Pi^-5
+```
+
+The powers of `Pi` cancel as expected, and `Pi^0` is automatically converted to an ordinary real number wherever possible.
+
+```julia
+julia> Pi^2 / Pi^2
+1.0
+```
+
+Expressions involving `Pi` are automatically promoted to `Complex` as necessary, eg.
+
+```julia
+julia> (1+im)Pi^3 / 2Pi^2
+0.5*Pi + 0.5*Pi*im
+
+julia> (1+im)Pi^3 / 2Pi^2 * 2/Pi
+1.0 + 1.0im
+```
+
 ## Trigonometric functions
 
-The `PiTimes` type uses `sinpi` and `cospi` under the hood when it is used as an argument to `sin` and `cos`. This results in exact results in several contexts where the inaccuracies arise from floating-point conversions.
+The type `PiTimes` uses `sinpi` and `cospi` under the hood when it is used as an argument to `sin` and `cos`. This results in exact results in several contexts where the inaccuracies arise from floating-point conversions.
 
 ```julia
 julia> cos(3π/2)
@@ -51,7 +87,7 @@ julia> tan(Pi/2)
 Inf
 ```
 
-It automatically promotes to `Complex` as necessary, so we may compute complex exponentials exactly for some arguments:
+We may compute complex exponential exactly:
 
 ```julia
 julia> exp(im*π/2)

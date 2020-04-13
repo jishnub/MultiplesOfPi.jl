@@ -265,7 +265,7 @@ function Base.convert(::Type{PiExpTimes{N}},x::Real) where {N}
 	den = N < 0 ? π^float(N) : π^N
 	PiExpTimes{N}(x/den)
 end
-function Base.convert(::Type{PiExpTimes{N,T}},x::Real) where {N,T}
+function Base.convert(::Type{PiExpTimes{N,T}},x::Real) where {N,T<:Real}
 	den = N < 0 ? π^float(N) : π^N
 	PiExpTimes{N}(T(x/den))
 end
@@ -273,7 +273,7 @@ function Base.convert(::Type{PiExpTimes{N}},::Irrational{:π}) where {N}
 	den = N < 1 ? π^float(N-1) : π^(N-1)
 	PiExpTimes{N}(1/den)
 end
-function Base.convert(::Type{PiExpTimes{N,T}},::Irrational{:π}) where {N,T}
+function Base.convert(::Type{PiExpTimes{N,T}},::Irrational{:π}) where {N,T<:Real}
 	den = N < 1 ? π^float(N-1) : π^(N-1)
 	PiExpTimes{N}(T(1/den))
 end
@@ -281,28 +281,29 @@ function Base.convert(::Type{PiExpTimes{N}},p::PiExpTimes{M}) where {M,N}
 	den = N < M ? π^float(N-M) : π^(N-M)
 	PiExpTimes{N}(p.x/den)
 end
-function Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{M}) where {M,N,T}
+function Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{M}) where {M,N,T<:Real}
 	den = N < M ? π^float(N-M) : π^(N-M)
 	PiExpTimes{N}(T(p.x/den))
 end
 Base.convert(::Type{PiExpTimes{N}},p::PiExpTimes{N}) where {N} = p
-Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N}) where {N,T} = PiExpTimes{N}(T(p.x))
-Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,T}) where {N,T} = p
+function Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N}) where {N,T<:Real}
+	PiExpTimes{N}(T(p.x))
+end
+Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,T}) where {N,T<:Real} = p
 
 function Base.show(io::IO,p::PiExpTimes{N}) where {N}
 	x = p.x
-	function expstr(p)
-		ifelse(isone(N),"Pi","Pi^"*string(N))
-	end
+
+	expstr(p) = isone(N) ? "Pi" : "Pi^"*string(N)
 	
-	xstrexp(x,p) = isone(x) ? expstr(p) : string(x)*"*"*expstr(p)
-	xstrexp(x::Integer,p) = isone(x) ? expstr(p) : string(x)*expstr(p)
-	xstrexp(x::AbstractFloat,p) = isone(x) ? expstr(p) : 
+	tostr(x,p) = isone(x) ? expstr(p) : string(x)*"*"*expstr(p)
+	tostr(x::Integer,p) = isone(x) ? expstr(p) : string(x)*expstr(p)
+	tostr(x::AbstractFloat,p) = isone(x) ? expstr(p) : 
 								isinf(x) || isnan(x) ? string(x) :
 								string(x)*"*"*expstr(p)
-	xstrexp(x::Rational,p) = "("*string(x)*")"*expstr(p)
+	tostr(x::Rational,p) = "("*string(x)*")"*expstr(p)
 
-	str = iszero(x) ? string(x) : xstrexp(x,p)
+	str = iszero(x) ? string(x) : tostr(x,p)
 	print(io,str)
 end
 
