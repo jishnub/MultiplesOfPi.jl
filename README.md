@@ -7,16 +7,14 @@
 
 # Introduction
 
-This package exports the type `PiExpTimes{N}` that behaves as a multipying factor of `π^N`, and the type `PiTimes` that is aliased to `PiExpTimes{1}`. It also provides the constant `Pi` for convenience, defined as `PiTimes(1)`, which behaves like `π` except it produces results with higher accuracy in certain trigonometric and algebraic contexts. 
-
-In most scenarios the numbers `Pi` and `pi` are interchangable.
+This package exports the type `PiExpTimes{N,T}` that satisfies `PiExpTimes{N,T}(x) = x*π^N`, and the type `PiTimes` that is aliased to `PiExpTimes{1}`. It also provides the constant `Pi` for convenience, defined as `PiTimes(1)`, that behaves like `π` except it produces results with higher accuracy in certain trigonometric and algebraic contexts. In most scenarios the numbers `Pi` and `π` are interchangable.
 
 ```julia
 julia> Pi^2 == π^2
 true
 ```
 
-It's usually possible, and cleaner, to express mathematical relations in terms of `Pi` instead of the more cumbersome `PiExpTimes`, and is recommended unless it's specifically necessary.
+It's usually possible, and cleaner, to express mathematical relations in terms of `Pi` instead of the more cumbersome `PiExpTimes`, and is recommended unless it's specifically necessary to do so.
 
 ## Rationale
 
@@ -114,6 +112,63 @@ julia> cosh(im*π/2)
 
 julia> cosh(im*Pi/2)
 0.0 + 0.0im
+```
+
+## Look out
+
+### Floating-point inaccuracies
+
+This package is still a work in progress, and all bugs haven't been zapped yet. Some differences might exist in floating-point arithmetic, eg. 
+
+```julia
+julia> Pi^5 |> float
+306.01968478528136
+
+julia> π^5 |> float
+306.0196847852814
+```
+The equivalence with `π` is therefore not always exact. Such differences are however not unexpected in floating-point arithmetic, as repeated multiplication is not equivalent to exponentiation.
+
+```julia
+julia> π*π*π*π*π == π^5
+false
+```
+
+### Type-instability
+
+The type `PiExpTimes{N}` stores the exponent as a type-parameter, therefore exponentiation is not type-stable in general. 
+
+### Floating-point promotion
+
+`PiExpTimes{N}` is promoted to float as soon as it encounters a number other than another `PiExpTimes{N}`. This means operations like addition will result in floating-point numbers instead of a polynomial.
+
+```julia
+julia> Pi^2 + Pi
+13.011197054679151
+```
+
+This also means arrays of `PiExpTimes{N}` containing mixed types needs to be created by specifically supplying a type. This may be any concrete `PiExpTimes{N,T}` type, a `PiExpTimes` type that can catch them all, or a real type such as `Float64`
+
+```julia
+julia> [Pi^2,Pi] # both get promoted to Float64 by default
+2-element Array{Float64,1}:
+ 9.869604401089358
+ 3.141592653589793
+ 
+julia> PiExpTimes[Pi,Pi^2] # this preserves the type of each element, but is not a concrete type
+2-element Array{PiExpTimes,1}:
+   Pi
+ Pi^2
+ 
+julia> PiExpTimes{2}[Pi,Pi^2] # Not a concrete type, but preserves the type of Pi^2 while converting Pi
+2-element Array{PiExpTimes{2,T} where T<:Real,1}:
+ 0.3183098861837907*Pi^2
+                    Pi^2
+                    
+julia> PiExpTimes{2,Float64}[Pi,Pi^2] # Concrete type
+2-element Array{PiExpTimes{2,Float64},1}:
+ 0.3183098861837907*Pi^2
+                    Pi^2
 ```
 
 # Installation
