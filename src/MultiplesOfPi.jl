@@ -5,9 +5,17 @@ export PiTimes
 export Pi
 
 """
-	PiExpTimes(x)
+	PiExpTimes{n}(x)
 
 Construct a number that behaves as `x*π^n` for a real `x` and an integer `n`
+
+# Examples
+```jldoctest
+julia> PiExpTimes{2}(3)
+3Pi^2
+```
+
+See also: [`PiTimes`](@ref), [`Pi`](@ref)
 """
 struct PiExpTimes{N,T<:Real} <: AbstractIrrational
 	x :: T
@@ -34,13 +42,31 @@ PiExpTimes{N,Irrational{:π}}(::Irrational{:π}) where {N} = PiExpTimes{N+1}(1)
 
 Construct a number that behaves as `x*π` for a real `x`. `PiTimes` is an alias for
 `PiExpTimes{1}`
+
+# Examples
+```jldoctest
+julia> PiTimes(3)
+3Pi
+```
+
+See also: [`PiExpTimes`](@ref), [`Pi`](@ref)
 """
 const PiTimes{T<:Real} = PiExpTimes{1,T}
 
 """
 	Pi
 
-The number `PiTimes(1)`, numerically equivalent to `pi`
+The number `PiTimes(1)`, numerically equivalent to `pi`. 
+Using `Pi` instead of `pi` often produces results that avoid floating-point inaccuracies.
+
+# Examples
+```jldoctest
+julia> sin(Pi)
+0.0
+
+julia> sin(pi)
+1.2246467991473532e-16
+```
 """
 const Pi = PiTimes(1)
 
