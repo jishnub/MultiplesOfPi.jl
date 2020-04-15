@@ -1,5 +1,6 @@
 using MultiplesOfPi
 using Test
+import MultiplesOfPi: ExponentMismatchError
 
 @testset "Constructor" begin
     @testset "PiTimes" begin
@@ -27,6 +28,13 @@ using Test
         @test PiExpTimes{2,Int}(Pi^2) === Pi^4
         @test PiExpTimes{2,Float64}(Pi^2) === 1.0Pi^4
 
+        @test PiExpTimes{2,PiTimes}(Pi) === PiExpTimes{2,PiExpTimes{1}}(Pi)
+        @test PiExpTimes{2,PiTimes{Int}}(Pi) === PiExpTimes{2,PiExpTimes{1,Int}}(Pi)
+        @test PiExpTimes{2,PiTimes{Int}}(Pi) === PiExpTimes{2,PiTimes{Int}}(Pi)
+        @test PiExpTimes{2,PiTimes{Int}}(Pi) == Pi^3
+
+        @test PiExpTimes{2,Int}(2.0) === PiExpTimes{2}(2)
+
         @test PiTimes(pi) === PiExpTimes{2}(1)
         @test PiExpTimes{2}(pi) === PiExpTimes{3}(1)
         @test PiExpTimes{2,Irrational{:π}}(π) == PiExpTimes{3}(1)
@@ -37,6 +45,14 @@ using Test
         
         @test float(PiExpTimes{2}(2)) === 2*pi*pi
 
+        @test PiTimes{PiTimes}(Pi) isa PiTimes{PiTimes{Int}}
+        @test PiTimes{PiTimes{Int}}(Pi) isa PiTimes{PiTimes{Int}}
+        @test PiTimes{PiTimes}(Pi) == Pi^2
+        @test PiTimes{PiTimes{Int}}(Pi) == Pi^2
+
+        @test PiTimes{PiTimes}(1) isa PiExpTimes{1,PiExpTimes{1,PiExpTimes{-1,Int64}}}
+        @test PiTimes{PiTimes}(1) == Pi
+
         @testset "PiExpTimes{0}" begin
             @test PiExpTimes{0}(3) === 3
             @test PiExpTimes{0}(3.0) === 3.0
@@ -44,7 +60,36 @@ using Test
             @test float(PiExpTimes{0,Float64}(3.0)) === 3.0
             @test float(PiExpTimes{0,Int}(3)) === 3.0
         end
+    end
+end
 
+@testset "Rootval and exponent" begin
+    @testset "netexponent" begin
+        @test MultiplesOfPi.netexponent(Pi) === 1
+        @test MultiplesOfPi.netexponent(PiTimes) === 1
+        @test MultiplesOfPi.netexponent(PiTimes{Int}) === 1
+        @test MultiplesOfPi.netexponent(PiExpTimes{2}) === 2
+        @test MultiplesOfPi.netexponent(PiExpTimes{2,Int}) === 2
+        @test MultiplesOfPi.netexponent(PiExpTimes{2,PiTimes}) === 3
+        @test MultiplesOfPi.netexponent(PiExpTimes{2,PiTimes{Int}}) === 3
+        @test MultiplesOfPi.netexponent(PiExpTimes{2,PiTimes{PiExpTimes{2}}}) === 5
+        @test MultiplesOfPi.netexponent(PiExpTimes{2,PiTimes{PiExpTimes{2,Int}}}) === 5
+    end
+    @testset "rootval" begin
+        @test MultiplesOfPi.rootval(Pi) === 1
+        @test MultiplesOfPi.rootval(Pi^2) === 1
+        @test MultiplesOfPi.rootval(3Pi) === 3
+        @test MultiplesOfPi.rootval(PiTimes{PiExpTimes{2,Float64}}(1.0Pi^2)) === 1.0
+    end
+    @testset "rootvaltype" begin
+        @test MultiplesOfPi.rootvaltype(Pi) === Int
+        @test MultiplesOfPi.rootvaltype(Pi^2) === Int
+        @test MultiplesOfPi.rootvaltype(2.0Pi^2) === Float64
+        @test MultiplesOfPi.rootvaltype(PiTimes{PiExpTimes{2,Float64}}(1.0Pi^2)) === Float64
+    end
+    @testset "simplify" begin
+        @test MultiplesOfPi.simplify(PiTimes{PiExpTimes{2,Float64}}(1.0Pi^2)) === 1.0Pi^3
+        @test MultiplesOfPi.simplify(convert(PiTimes{PiExpTimes{-1,Float64}},1)) === 1.0
     end
 end
 
@@ -169,6 +214,8 @@ end
             @test one(PiExpTimes{0}(zero(T))) == one(T)
         end
         @test one(Pi) === true
+
+        @test one(PiTimes{PiTimes}(1)) === true
     end
     @testset "zero" begin
         @test zero(Pi) === PiTimes(0) == 0
@@ -196,6 +243,9 @@ end
             @test zero(PiExpTimes{0,T}(1)) isa T
             @test zero(PiExpTimes{0,T}(1)) == zero(T)
         end
+
+        @test zero(PiTimes{PiTimes}(1)) isa PiExpTimes{1,PiExpTimes{1,PiExpTimes{-1,Int64}}}
+        @test zero(PiTimes{PiTimes}(1)) === PiTimes{PiTimes}(0)
     end
 end
 
@@ -297,30 +347,30 @@ end
         @testset "PiExpTimes to float" begin
             @testset "PiTimes" begin
                 @test convert(Float64,PiTimes(1)) === Float64(π)
-                @test Float64(PiTimes(1)) === Float64(1)*π
+                @test Float64(PiTimes(1)) === Float64(π)
                 @test convert(Float64,PiTimes(2)) === Float64(2π)
-                @test Float64(PiTimes(2)) === Float64(2)*π
-                @test convert(BigFloat,PiTimes(1)) == BigFloat(1)*π
-                @test BigFloat(PiTimes(1)) == BigFloat(1)*π
-                @test convert(Float32,PiTimes(1)) === Float32(1)*π
-                @test Float32(PiTimes(1)) === Float32(1)*π
-                @test convert(Float16,PiTimes(1)) === Float16(1)*π
-                @test Float16(PiTimes(1)) === Float16(1)*π
+                @test Float64(PiTimes(2)) === Float64(2π)
+                @test convert(BigFloat,PiTimes(1)) == BigFloat(π)
+                @test BigFloat(PiTimes(1)) == BigFloat(π)
+                @test convert(Float32,PiTimes(1)) === Float32(π)
+                @test Float32(PiTimes(1)) === Float32(π)
+                @test convert(Float16,PiTimes(1)) === Float16(π)
+                @test Float16(PiTimes(1)) === Float16(π)
             end
             @testset "PiExpTimes" begin
-                @test convert(Float64,PiExpTimes{2}(1)) === Float64(π*π)
-                @test Float64(PiExpTimes{2}(1)) === Float64(1)*π*π
-                @test convert(Float64,PiExpTimes{2}(2)) === Float64(2π*π)
-                @test Float64(PiExpTimes{2}(2)) === Float64(2)*π*π
-                @test convert(BigFloat,PiExpTimes{2}(1)) == BigFloat(1)*π*π
-                @test BigFloat(PiExpTimes{2}(1)) == BigFloat(1)*π*π
-                @test convert(Float32,PiExpTimes{2}(1)) === Float32(1)*π*π
-                @test Float32(PiExpTimes{2}(1)) === Float32(1)*π*π
-                @test convert(Float16,PiExpTimes{2}(1)) === Float16(1)*π*π
-                @test Float16(PiExpTimes{2}(1)) === Float16(1)*π*π
+                @test convert(Float64,PiExpTimes{2}(1)) === Float64(π^2)
+                @test Float64(PiExpTimes{2}(1)) === Float64(π^2)
+                @test convert(Float64,PiExpTimes{2}(2)) === Float64(2π^2)
+                @test Float64(PiExpTimes{2}(2)) === Float64(2π^2)
+                @test convert(BigFloat,PiExpTimes{2}(1)) == BigFloat(π)^2
+                @test BigFloat(PiExpTimes{2}(1)) == BigFloat(π)^2
+                @test convert(Float32,PiExpTimes{2}(1)) === Float32(π^2)
+                @test Float32(PiExpTimes{2}(1)) === Float32(π^2)
+                @test convert(Float16,PiExpTimes{2}(1)) === Float16(π^2)
+                @test Float16(PiExpTimes{2}(1)) === Float16(π^2)
 
-                @test AbstractFloat(PiExpTimes{2}(1)) === Float64(π*π)
-                @test float(PiExpTimes{2}(1)) === Float64(π*π)
+                @test AbstractFloat(PiExpTimes{2}(1)) === Float64(π^2)
+                @test float(PiExpTimes{2}(1)) === Float64(π^2)
 
                 @test Float64(PiExpTimes{0,Int}(1)) === Float64(1)
                 @test Float32(PiExpTimes{0,Int}(1)) === Float32(1)
@@ -335,30 +385,31 @@ end
         end
         @testset "Real to PiExpTimes" begin
             @testset "Irrational to PiTimes" begin
-                @test convert(PiTimes{Int},π) === PiTimes(1)
+                @test convert(PiTimes{Int},π) === Pi
                 @test convert(PiTimes{Float64},π) === PiTimes(1.0)
-                @test convert(PiTimes,π) === PiTimes(1.0)
+                @test convert(PiTimes,π) === Pi
             end
             @testset "Irrational to PiExpTimes" begin
-                @test convert(PiExpTimes{2},π) === PiExpTimes{2}(1/π)
+                @test convert(PiExpTimes{2},π) === PiExpTimes{2,PiExpTimes{-1,Int}}(Pi^-1)
                 @test convert(PiExpTimes{2,Float64},π) === PiExpTimes{2}(Float64(1/π))
             end
 
             @testset "Int and Float to PiExpTimes" begin
                 @testset "PiTimes" begin
-                    @test convert(PiTimes,2) === PiTimes(2/π)
+                    @test convert(PiTimes,2) === PiTimes{PiExpTimes{-1,Int}}(2/Pi)
+                    # Specifying a concrete Real type should throw an error
                     for t in (Float16,Float32,Float64)
-                        @test convert(PiTimes{t},2) === PiTimes{t}(2/π)
+                        @test convert(PiTimes{t},2) == PiTimes{t}(2/π)
                         @test convert(PiTimes{t},2.0) === PiTimes{t}(2.0/π)
                     end
                     convert(PiTimes{BigFloat},2) === PiTimes{BigFloat}(2/π)
                     convert(PiTimes{BigFloat},2.0) === PiTimes{BigFloat}(2.0/π)
                 end
                 @testset "PiExpTimes" begin
-                    @test convert(PiExpTimes{2},2) === PiExpTimes{2}(2/π^2)
+                    @test convert(PiExpTimes{2},2) === PiExpTimes{2,PiExpTimes{-2,Int}}(2/Pi^2)
                     for t in (Float16,Float32,Float64)
-                        @test convert(PiExpTimes{2,t},2) === PiExpTimes{2,t}(2/π^2)
-                        @test convert(PiExpTimes{2,t},2.0) === PiExpTimes{2,t}(2.0/π^2)
+                        @test convert(PiExpTimes{2,t},2) === PiExpTimes{2}(t(2/Pi^2))
+                        @test convert(PiExpTimes{2,t},2.0) === PiExpTimes{2}(t(2.0/Pi^2))
                     end
                     convert(PiExpTimes{2,BigFloat},2) === PiExpTimes{2,BigFloat}(2/π^2)
                     convert(PiExpTimes{2,BigFloat},2.0) === PiExpTimes{2,BigFloat}(2.0/π^2)
@@ -377,15 +428,27 @@ end
                 end
             end
             @testset "PiExpTimes to PiExpTimes{2}" begin
-                @test convert(PiExpTimes{2},Pi) === PiExpTimes{2}(1/π)
+                @test convert(PiExpTimes{2},Pi) === PiExpTimes{2,PiExpTimes{-1,Int}}(1/Pi)
                 @test convert(PiExpTimes{2},Pi^2) === Pi^2
                 @test convert(PiExpTimes{2,Float64},Pi^2) === 1.0*Pi^2
                 @test convert(PiExpTimes{2,Int},Pi^2) === Pi^2
                 @test convert(PiExpTimes{2,Int},PiExpTimes{2,Int}(2)) === PiExpTimes{2,Int}(2)
-                @test convert(PiExpTimes{2},Pi^3) === PiExpTimes{2}(float(π))
-                @test convert(PiExpTimes{2,Float64},Pi) === PiExpTimes{2}(1/π)
+                @test convert(PiExpTimes{2},Pi^3) === PiExpTimes{2,PiTimes{Int}}(Pi)
+                @test convert(PiExpTimes{2,Float64},Pi) === PiExpTimes{2}(Float64(1/π))
+                @test convert(PiExpTimes{2,Float32},Pi) === PiExpTimes{2}(Float32(1/π))
+                @test convert(PiExpTimes{2,Float16},Pi) === PiExpTimes{2}(Float16(1/π))
                 @test convert(PiExpTimes{2,Float64},Pi^2) === PiExpTimes{2}(1.0)
                 @test convert(PiExpTimes{2,Float64},Pi^3) === PiExpTimes{2}(float(π))
+            end
+            @testset "conversion retaining type" begin
+                @test convert(PiExpTimes{2},Pi) isa PiExpTimes{2,PiExpTimes{-1,Int}}
+                @test convert(PiExpTimes{2},Pi) * Pi^-2 * Pi === 1.0
+            end
+            @testset "nested" begin
+                # Go crazy
+                @test convert(PiExpTimes{-2,PiExpTimes{2,PiTimes{Int}}},Pi) == Pi
+                @test convert(PiExpTimes{-2,PiExpTimes{2,
+                        PiExpTimes{-1,PiExpTimes{2,Int}}}},Pi) == Pi
             end
         end
         @testset "Complex" begin
@@ -409,7 +472,7 @@ end
         @test -r isa PiExpTimes{2,Int}
         @test -p === PiTimes(-p.x)
         @test -r === PiExpTimes{2}(-r.x)
-        @test -z === -z.x
+        @test -z === -3
     end 
 
     @testset "addition" begin
@@ -417,7 +480,7 @@ end
         @test p + q === PiTimes(p.x + q.x)
         @test r + r === PiExpTimes{2}(2r.x)
         @test p + r === float(p) + float(r)
-        @test z + z === 2z.x
+        @test z + z === 6
     end
 
     @testset "subtraction" begin
@@ -425,7 +488,7 @@ end
         @test p - q === PiTimes(p.x - q.x)
         @test r - r === PiExpTimes{2}(zero(r.x)) == 0
         @test p - r === float(p) - float(r)
-        @test z - z === zero(z.x)
+        @test z - z === 0
     end
 
     @testset "multiplication" begin
@@ -632,7 +695,7 @@ end
 
             @test π//Pi^2 === (1//Pi)
             @test Pi^2//π === Pi//1
-            @test PiExpTimes{0,Int}(1)//π === 1//Pi
+            @test PiExpTimes{0,Int}(1)//Pi === 1//Pi
         end
 
         @testset "PiExpTimes // PiExpTimes" begin
@@ -802,8 +865,8 @@ end
             @test tan(Pi^2) === tan(π^2)
             @test cot(Pi^2) === cot(π^2)
             @test sinc(Pi^2) === sinc(π^2)
-            @test sinc(Pi^-2) ≈ sinc((1/π)^2) # should be equal ideally
-            @test sinc(1/Pi^2) ≈ sinc((1/π)^2) # should be equal ideally
+            @test sinc(Pi^-2) === sinc((1/π)^2)
+            @test sinc(1/Pi^2) === sinc((1/π)^2) # should be equal ideally
             @test sec(Pi^2) === sec(π^2)
             @test csc(Pi^2) === csc(π^2)
         end
@@ -920,18 +983,26 @@ end
         end
     end
     
-    @testset "nested" begin
+    @testset "PiExpTimes" begin
         show(io,Pi*Pi)
         @test String(take!(io)) == "Pi^2"
         show(io,Pi*Pi*Pi)
         @test String(take!(io)) == "Pi^3"
+
+        @testset "nested" begin
+            show(io,PiTimes{PiTimes}(1))
+            @test String(take!(io)) == "Pi^-1*Pi*Pi"
+
+            show(io,PiTimes{PiTimes}(Pi))
+            @test String(take!(io)) == "Pi*Pi"
+        end
     end
 
     @testset "complex" begin
         show(io,im*Pi)
         @test String(take!(io)) == "0 + Pi*im"
 
-        @testset "nested" begin
+        @testset "PiExpTimes" begin
             show(io,im*Pi*Pi)
             @test String(take!(io)) == "0 + Pi^2*im"
         end
