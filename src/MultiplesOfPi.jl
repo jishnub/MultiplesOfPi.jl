@@ -401,8 +401,6 @@ end
 
 # Conversions
 
-struct ExponentMismatchError end
-Base.showerror(io::IO,e::ExponentMismatchError) = print(io,"Exponent mismatch in type")
 struct IncompatibleTypesError end
 Base.showerror(io::IO,e::IncompatibleTypesError) = print(io,
 	"Incompatible types")
@@ -577,23 +575,19 @@ end
 function Base.convert(::Type{PiTimes{PiExpTimes{M,R}}},
 	p::PiExpTimes{Q,T}) where {M,Q,T<:Real,R<:Real}
 	
-	netexponent(PiTimes{PiExpTimes{M,R}}) == netexponent(p) ||
-		throw(ExponentMismatchError())
 	rejectUnionAllroot(PiTimes{PiExpTimes{M,R}},p)
 
-	# How this works: convert(PiTimes{PiExpTimes{2,Int}},Pi^3) == Pi^2*Pi
+	# eg. convert(PiTimes{PiExpTimes{3,Float64}},Pi^3) == Float64(1/Pi)*Pi^3*Pi
 	PiTimes{PiExpTimes{M,R}}(convert(PiExpTimes{M,R},PiExpTimes{Q-1,T}(p.x)))
 end
 # Even more special case
 function Base.convert(::Type{PiTimes{PiExpTimes{M,R}}},
 	p::PiTimes) where {M,R<:Real}
 	
-	netexponent(PiTimes{PiExpTimes{M,R}}) == netexponent(p) ||
-		throw(ExponentMismatchError())
+	# eg. convert(PiTimes{PiExpTimes{2,Float64}},Pi) == Float64(1/Pi^2)*Pi^2*Pi
 	rejectUnionAllroot(PiTimes{PiExpTimes{M,R}},p)
 
-	# How this works: convert(PiTimes{PiExpTimes{0,Int}},Pi) == Pi^0*Pi
-	p_new = convert(PiExpTimes{M,R},p)
+	p_new = convert(PiExpTimes{M,R},p.x)
 	PiTimes{PiExpTimes{M,R}}(p_new)
 end
 function Base.convert(::Type{PiTimes{PiExpTimes{M,R}}},

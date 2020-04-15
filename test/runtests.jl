@@ -1,6 +1,5 @@
 using MultiplesOfPi
 using Test
-import MultiplesOfPi: ExponentMismatchError
 
 @testset "Constructor" begin
     @testset "PiTimes" begin
