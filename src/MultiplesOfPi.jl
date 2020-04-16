@@ -111,16 +111,16 @@ julia> sin(pi)
 const Pi = PiTimes(1)
 
 # Helper functions to get rid of nesting
-netexponent(p::PiExpTimes{N,<:Real}) where {N} = N + netexponent(p.x)
-netexponent(::Real) = 0
-netexponent(::Type{PiExpTimes{N,R}}) where {N,R} = N + netexponent(R)
-netexponent(::Type{PiExpTimes{N}}) where {N,R} = N
-netexponent(::Type{Real}) = error("Ambiguous exponent")
-netexponent(::Type{<:Real}) = 0
+netexponent(p::PiExpTimes{N,T}) where {N,T<:Real} = N + netexponent(T,p.x)::Int
+netexponent(p::Real) = 0
+
+netexponent(::Type{<:Real},::Real) = 0
+netexponent(::Type{Real},p::PiExpTimes{N,T}) where {N,T} = N + netexponent(T,p.x)::Int
+netexponent(::Type{PiExpTimes{N,Real}},p::PiExpTimes{N,T}) where {N,T<:Real} = N + netexponent(T,p.x)::Int
+netexponent(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,T}) where {N,T<:Real} = N + netexponent(T,p.x)::Int
 
 rootvaltype(::T) where {T} = rootvaltype(T)
-rootvaltype(::Type{PiExpTimes{N,T}}) where {N,T<:PiExpTimes} = rootvaltype(T)
-rootvaltype(::Type{PiExpTimes{N,T}}) where {N,T<:Real} = T
+rootvaltype(::Type{PiExpTimes{N,T}}) where {N,T<:Real} = rootvaltype(T)
 rootvaltype(::Type{T}) where {T<:Real} = T
 
 rootval(p::PiExpTimes{<:Any,<:Real}) = rootval(p.x)
@@ -139,15 +139,12 @@ Pi^3
 ```
 """
 simplify(x) = x
-simplify(p::PiExpTimes{0}) = simplify(p.x)
-simplify(p::PiExpTimes{N,Real}) where {N} = PiExpTimes{N}(1)*p.x
-function simplify(p::PiExpTimes{M,<:PiExpTimes}) where {M}
+function simplify(p::PiExpTimes{M,<:Real}) where {M}
 	T = rootvaltype(p)
 	N = netexponent(p)
 	x = rootval(p)
-	simplify(PiExpTimes{N,T}(x))
+	PiExpTimes{N,T}(x)
 end
-simplify(p::PiExpTimes{0,<:PiExpTimes}) where {N} = simplify(rootval(p))
 function simplify(p::Complex{<:PiExpTimes{<:Any,<:PiExpTimes}})
 	Complex(simplify(p.re),simplify(p.im))
 end

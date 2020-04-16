@@ -66,14 +66,17 @@ end
 @testset "Rootval and exponent" begin
     @testset "netexponent" begin
         @test MultiplesOfPi.netexponent(Pi) === 1
-        @test MultiplesOfPi.netexponent(PiTimes) === 1
-        @test MultiplesOfPi.netexponent(PiTimes{Int}) === 1
-        @test MultiplesOfPi.netexponent(PiExpTimes{2}) === 2
-        @test MultiplesOfPi.netexponent(PiExpTimes{2,Int}) === 2
-        @test MultiplesOfPi.netexponent(PiExpTimes{2,PiTimes}) === 3
-        @test MultiplesOfPi.netexponent(PiExpTimes{2,PiTimes{Int}}) === 3
-        @test MultiplesOfPi.netexponent(PiExpTimes{2,PiTimes{PiExpTimes{2}}}) === 5
-        @test MultiplesOfPi.netexponent(PiExpTimes{2,PiTimes{PiExpTimes{2,Int}}}) === 5
+        @test MultiplesOfPi.netexponent(PiTimes(3.0)) === 1
+        @test MultiplesOfPi.netexponent(PiTimes{Int}(4)) === 1
+        @test MultiplesOfPi.netexponent(PiExpTimes{2}(4)) === 2
+        @test MultiplesOfPi.netexponent(PiExpTimes{2,Real}(4)) === 2
+        @test MultiplesOfPi.netexponent(PiExpTimes{2,Int}(4)) === 2
+        @test MultiplesOfPi.netexponent(PiExpTimes{2,PiTimes}(Pi)) === 3
+        @test MultiplesOfPi.netexponent(PiExpTimes{2,PiTimes{Int}}(Pi)) === 3
+        @test MultiplesOfPi.netexponent(
+            PiExpTimes{2,PiTimes{PiExpTimes{2}}}(PiTimes{PiExpTimes{2}}(Pi^2))) === 5
+        @test MultiplesOfPi.netexponent(
+            PiExpTimes{2,PiTimes{PiExpTimes{2,Int}}}(PiTimes{PiExpTimes{2}}(Pi^2))) === 5
     end
     @testset "rootval" begin
         @test MultiplesOfPi.rootval(Pi) === 1
