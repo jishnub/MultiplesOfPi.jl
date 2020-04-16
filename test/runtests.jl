@@ -1,5 +1,6 @@
 using MultiplesOfPi
 using Test
+import MultiplesOfPi: IncompatibleTypesError
 
 @testset "Constructor" begin
     @testset "PiTimes" begin
@@ -281,17 +282,17 @@ end
             end
             @testset "PiExpTimes{2} and PiTimes" begin
                 for t in (Int8, Int16, Int32, Int64, Int128, Bool, UInt8, UInt16, UInt32, UInt64, UInt128)
-                        @test promote_rule(PiExpTimes{2,Float16},PiTimes{t}) === Float64
-                        @test promote_rule(PiTimes{t},PiExpTimes{2,Float16}) === Float64
-                        @test promote_type(PiExpTimes{2,Float16},PiTimes{t}) === Float64
-                        @test promote_type(PiTimes{t},PiExpTimes{2,Float16}) === Float64
+                        @test promote_rule(PiExpTimes{2,Float16},PiTimes{t}) === PiTimes{promote_type(Float16,t)}
+                        @test promote_rule(PiTimes{t},PiExpTimes{2,Float16}) === PiTimes{promote_type(Float16,t)}
+                        @test promote_type(PiExpTimes{2,Float16},PiTimes{t}) === PiTimes{promote_type(Float16,t)}
+                        @test promote_type(PiTimes{t},PiExpTimes{2,Float16}) === PiTimes{promote_type(Float16,t)}
                 end
                 for t1 in (Float32, Float64)
                     for t2 in (Int8, Int16, Int32, Int64, Bool, UInt8, UInt16, UInt32, UInt64)
-                        @test promote_rule(PiExpTimes{2,t1},PiTimes{t2}) === Float64
-                        @test promote_rule(PiTimes{t2},PiExpTimes{2,t1}) === Float64
-                        @test promote_type(PiTimes{t2},PiExpTimes{2,t1}) === Float64
-                        @test promote_type(PiTimes{t2},PiExpTimes{2,t1}) === Float64
+                        @test promote_rule(PiExpTimes{2,t1},PiTimes{t2}) === PiTimes{promote_type(t1,t2)}
+                        @test promote_rule(PiTimes{t2},PiExpTimes{2,t1}) === PiTimes{promote_type(t1,t2)}
+                        @test promote_type(PiTimes{t2},PiExpTimes{2,t1}) === PiTimes{promote_type(t1,t2)}
+                        @test promote_type(PiTimes{t2},PiExpTimes{2,t1}) === PiTimes{promote_type(t1,t2)}
                     end
                 end
             end
@@ -396,7 +397,6 @@ end
             @testset "Int and Float to PiExpTimes" begin
                 @testset "PiTimes" begin
                     @test convert(PiTimes,2) === PiTimes{PiExpTimes{-1,Int}}(2/Pi)
-                    # Specifying a concrete Real type should throw an error
                     for t in (Float16,Float32,Float64)
                         @test convert(PiTimes{t},2) == PiTimes{t}(2/π)
                         @test convert(PiTimes{t},2.0) === PiTimes{t}(2.0/π)
@@ -453,9 +453,227 @@ end
         @testset "Complex" begin
             @test Complex(Pi,Pi) === Pi + im*Pi
             @test Complex(Pi^2,Pi^2) === Pi^2 + im*Pi^2
-            @test Complex(Pi^2,Pi) === π^2 + im*π
+            @test Complex(Pi^2,Pi) === float(π)*Pi + im*Pi
             @test Complex(Pi,π) === Pi + im*Pi
             @test Complex(π,Pi) === Pi + im*Pi
+        end
+        @testset "nested" begin
+            function testconvertapprox(T,x;rtol=1e-15,atol=1e-15)
+                @test convert(T,x) isa T
+                @test isapprox(convert(T,x),x,rtol=rtol,atol=atol)
+            end
+            function testconvertexact(T,x)
+                @test convert(T,x) isa T
+                @test convert(T,x) == x
+            end
+            @testset "Irrational{:π}" begin
+                @testset "Irrational{:π} to PiTimes{PiExpTimes}" begin
+                    @test convert(PiTimes{PiExpTimes{2,Float64}},π) isa PiTimes{PiExpTimes{2,Float64}}
+                    @test isapprox(convert(PiTimes{PiExpTimes{2,Float64}},π),π,rtol=1e-15)
+
+                    @test convert(PiTimes{PiExpTimes{-1,Float64}},π) isa PiTimes{PiExpTimes{-1,Float64}}
+                    @test convert(PiTimes{PiExpTimes{-1,Float64}},π) ≈ π
+
+                    @test convert(PiTimes{PiExpTimes{-1,Real}},π) isa PiExpTimes{1,PiExpTimes{-1,Real}}
+                    @test convert(PiTimes{PiExpTimes{-1,Real}},π) == Pi == π
+
+                    @test convert(PiTimes{PiExpTimes{0,Int}},π) === Pi
+                    @test convert(PiTimes{PiExpTimes{0,Float64}},π) === 1.0Pi
+                    @test convert(PiTimes{PiExpTimes{0,Real}},π) === PiTimes{Real}(1)
+
+                    @test_throws IncompatibleTypesError convert(PiTimes{PiExpTimes{-1,Int}},π)
+                    @test_throws IncompatibleTypesError convert(PiTimes{PiExpTimes{2,Int}},π)
+                end         
+                @testset "Irrational{:π} to PiExpTimes{PiExpTimes}" begin
+                    @test convert(PiExpTimes{3,PiExpTimes{-2,Int}},π) isa PiExpTimes{3,PiExpTimes{-2,Int}}
+                    @test convert(PiExpTimes{3,PiExpTimes{-2,Int}},π) == π
+
+                    @test convert(PiExpTimes{2,PiExpTimes{2,Float64}},π) isa PiExpTimes{2,PiExpTimes{2,Float64}}
+                    @test convert(PiExpTimes{2,PiExpTimes{2,Float64}},π) ≈ π
+
+                    @test convert(PiTimes{PiExpTimes{0,Float64}},π) === 1.0Pi
+                    @test convert(PiTimes{PiExpTimes{0,Real}},π) === PiTimes{Real}(1)
+
+                    @test_throws IncompatibleTypesError convert(PiExpTimes{2,PiExpTimes{0,Int}},π)
+                    @test_throws IncompatibleTypesError convert(PiExpTimes{1,PiExpTimes{-1,Int}},π)
+                    @test_throws IncompatibleTypesError convert(PiExpTimes{1,PiExpTimes{2,Int}},π)
+                end
+            end
+            @testset "Real" begin
+                x = 3
+                @testset "Real to PiExpTimes{PiExpTimes}" begin
+                    T = PiExpTimes{2,PiExpTimes{2,PiExpTimes{2,Float64}}}
+                    testconvertapprox(T,x)
+                    T = PiExpTimes{2,PiExpTimes{2,PiExpTimes{2,Real}}}
+                    testconvertapprox(T,x)
+                    T = PiExpTimes{2,PiExpTimes{2,PiExpTimes{2,Int}}}
+                    @test_throws IncompatibleTypesError convert(T,x)
+                    
+                    T = PiExpTimes{2,PiExpTimes{2}}
+                    @test convert(T,x) isa PiExpTimes{2,PiExpTimes{2,PiExpTimes{-4,Int}}}
+                    @test convert(T,Float64(x)) isa PiExpTimes{2,PiExpTimes{2,PiExpTimes{-4,Float64}}}
+                    @test convert(T,x) == x
+
+                    T = PiExpTimes{2,PiExpTimes{2,PiExpTimes{2}}}
+                    @test convert(T,x) isa PiExpTimes{2,PiExpTimes{2,PiExpTimes{2,PiExpTimes{-6,Int}}}}
+                    @test convert(T,Float64(x)) isa PiExpTimes{2,PiExpTimes{2,PiExpTimes{2,PiExpTimes{-6,Float64}}}}
+                    @test convert(T,x) == x
+                end
+                @testset "Real to PiTimes{PiTimes}" begin
+                    T = PiTimes{PiTimes{PiExpTimes{2,Float64}}}
+                    testconvertapprox(T,x)
+                    T = PiTimes{PiTimes{PiExpTimes{2,Real}}}
+                    testconvertapprox(T,x)
+                    T = PiTimes{PiTimes{PiExpTimes{2,Int}}}
+                    @test_throws IncompatibleTypesError convert(T,x)
+
+                    T = PiTimes{PiTimes}
+                    @test convert(T,x) isa PiTimes{PiTimes{PiExpTimes{-2,Int}}}
+                    @test convert(T,Float64(x)) isa PiTimes{PiTimes{PiExpTimes{-2,Float64}}}
+                    @test convert(T,x) == x
+
+                    T = PiTimes{PiTimes{PiTimes}}
+                    @test convert(T,x) isa PiTimes{PiTimes{PiTimes{PiExpTimes{-3,Int}}}}
+                    @test convert(T,Float64(x)) isa PiTimes{PiTimes{PiTimes{PiExpTimes{-3,Float64}}}}
+                    @test convert(T,x) == x
+                end
+                @testset "Real to PiExpTimes{PiTimes}" begin
+                    T = PiExpTimes{2,PiTimes{PiExpTimes{2,Float64}}}
+                    testconvertapprox(T,x)
+                    T = PiExpTimes{2,PiTimes{PiExpTimes{2,Real}}}
+                    testconvertapprox(T,x)
+                    T = PiExpTimes{2,PiTimes{PiExpTimes{2,Int}}}
+                    @test_throws IncompatibleTypesError convert(T,x)
+
+                    T = PiExpTimes{2,PiTimes}
+                    @test convert(T,x) isa PiExpTimes{2,PiTimes{PiExpTimes{-3,Int}}}
+                    @test convert(T,Float64(x)) isa PiExpTimes{2,PiTimes{PiExpTimes{-3,Float64}}}
+                    @test convert(T,x) == x
+                    
+                    T = PiExpTimes{2,PiTimes{PiTimes}}
+                    @test convert(T,x) isa PiExpTimes{2,PiTimes{PiTimes{PiExpTimes{-4,Int}}}}
+                    @test convert(T,Float64(x)) isa PiExpTimes{2,PiTimes{PiTimes{PiExpTimes{-4,Float64}}}}
+                    @test convert(T,x) == x
+
+                    T = PiExpTimes{2,PiTimes{PiExpTimes{2}}}
+                    @test convert(T,x) isa PiExpTimes{2,PiTimes{PiExpTimes{2,PiExpTimes{-5,Int}}}}
+                    @test convert(T,Float64(x)) isa PiExpTimes{2,PiTimes{PiExpTimes{2,PiExpTimes{-5,Float64}}}}
+                    @test convert(T,x) == x
+                end
+                @testset "Real to PiTimes{PiExpTimes}" begin
+                    T = PiTimes{PiExpTimes{2,PiExpTimes{2,Float64}}}
+                    testconvertapprox(T,x)
+                    T = PiTimes{PiExpTimes{2,PiExpTimes{2,Real}}}
+                    testconvertapprox(T,x)
+                    T = PiTimes{PiExpTimes{2,PiExpTimes{2,Int}}}
+                    @test_throws IncompatibleTypesError convert(T,x)
+
+                    T = PiTimes{PiExpTimes{2}}
+                    @test convert(T,x) isa PiTimes{PiExpTimes{2,PiExpTimes{-3,Int}}}
+                    @test convert(T,Float64(x)) isa PiTimes{PiExpTimes{2,PiExpTimes{-3,Float64}}}
+                    @test convert(T,x) == x
+                end
+            end
+            @testset "PiExpTimes" begin
+                p = PiExpTimes{4,Int}(1)
+                @testset "PiExpTimes to PiExpTimes{PiExpTimes}" begin
+                    T = PiExpTimes{2,PiExpTimes{2,Real}}
+                    testconvertexact(T,p)
+                    T = PiExpTimes{2,PiExpTimes{3,Real}}
+                    testconvertexact(T,p)
+                    
+                    T = PiExpTimes{2,PiExpTimes{2,Int}}
+                    testconvertexact(T,p)
+                    T = PiExpTimes{2,PiExpTimes{3,Int}}
+                    @test_throws IncompatibleTypesError convert(T,p)
+
+                    T = PiExpTimes{2,PiExpTimes{2,Float64}}
+                    testconvertexact(T,p)
+                    T = PiExpTimes{2,PiExpTimes{1,Float64}}
+                    testconvertapprox(T,p)
+
+                    T = PiExpTimes{2,PiExpTimes{2}}
+                    @test convert(T,p) isa PiExpTimes{2,PiExpTimes{2,Int}}
+                    @test convert(T,p) == p
+
+                    T = PiExpTimes{2,PiExpTimes{3}}
+                    @test convert(T,p) isa PiExpTimes{2,PiExpTimes{3,PiExpTimes{-1,Int}}}
+                    @test convert(T,p) == p
+
+                    T = PiExpTimes{2,PiExpTimes{3,PiExpTimes{2}}}
+                    @test convert(T,p) isa PiExpTimes{2,PiExpTimes{3,PiExpTimes{2,PiExpTimes{-3,Int}}}}
+                    @test convert(T,p) == p
+                end
+                @testset "PiExpTimes to PiTimes{PiExpTimes}" begin
+                    T = PiTimes{PiExpTimes{2,Real}}
+                    testconvertexact(T,p)
+                    T = PiTimes{PiExpTimes{3,Real}}
+                    testconvertexact(T,p)
+                    
+                    T = PiTimes{PiExpTimes{2,Int}}
+                    @test_throws IncompatibleTypesError convert(T,p)
+                    T = PiTimes{PiExpTimes{3,Int}}
+                    testconvertexact(T,p)
+
+                    T = PiTimes{PiExpTimes{2,Float64}}
+                    testconvertapprox(T,p)
+                    T = PiTimes{PiExpTimes{3,Float64}}
+                    testconvertexact(T,p)
+
+                    T = PiTimes{PiExpTimes{2}}
+                    @test convert(T,p) isa PiTimes{PiExpTimes{2,PiTimes{Int}}}
+                    @test convert(T,p) == p
+
+                    T = PiTimes{PiExpTimes{3}}
+                    @test convert(T,p) isa PiTimes{PiExpTimes{3,Int}}
+                    @test convert(T,p) == p
+
+                    T = PiTimes{PiExpTimes{2,PiTimes}}
+                    @test convert(T,p) isa PiTimes{PiExpTimes{2,PiTimes{Int}}}
+                    @test convert(T,p) == p
+                end
+                @testset "PiTimes to PiExpTimes{PiTimes}" begin
+                    T = PiExpTimes{2,PiTimes{Real}}
+                    testconvertexact(T,Pi)
+                    T = PiExpTimes{2,PiTimes{Real}}
+                    testconvertexact(T,Pi)
+                    
+                    T = PiExpTimes{2,PiTimes{Int}}
+                    @test_throws IncompatibleTypesError convert(T,Pi)
+                    T = PiExpTimes{0,PiTimes{Int}}
+                    @test convert(T,Pi) === Pi
+
+                    T = PiExpTimes{0,PiTimes{Float64}}
+                    @test convert(T,Pi) === PiTimes{Float64}(1)
+                    T = PiExpTimes{-2,PiTimes{Float64}}
+                    testconvertapprox(T,Pi)
+
+                    T = PiExpTimes{2,PiTimes}
+                    @test convert(T,Pi) isa PiExpTimes{2,PiTimes{PiExpTimes{-2,Int}}}
+                    @test convert(T,Pi) == Pi
+
+                    T = PiExpTimes{2,PiTimes{PiTimes}}
+                    @test convert(T,Pi) isa PiExpTimes{2,PiTimes{PiTimes{PiExpTimes{-3,Int}}}}
+                    @test convert(T,Pi) == Pi
+                end
+                @testset "PiTimes to PiTimes{PiTimes}" begin
+                    T = PiTimes{PiTimes{Real}}
+                    testconvertexact(T,Pi)
+                    
+                    T = PiTimes{PiTimes{Int}}
+                    @test_throws IncompatibleTypesError convert(T,Pi)
+                    T = PiTimes{PiTimes{Float64}}
+                    testconvertapprox(T,Pi)
+
+                    T = PiTimes{PiTimes}
+                    @test convert(T,Pi) isa PiTimes{PiTimes{PiExpTimes{-1,Int}}}
+                    @test convert(T,Pi) == Pi
+
+                    T = PiTimes{PiTimes{PiTimes}}
+                    @test convert(T,Pi) isa PiTimes{PiTimes{PiTimes{PiExpTimes{-2,Int}}}}
+                    @test convert(T,Pi) == Pi
+                end
+            end
         end
     end
 end

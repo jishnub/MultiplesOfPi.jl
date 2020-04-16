@@ -116,44 +116,26 @@ julia> cosh(im*Pi/2)
 
 ## Look out
 
-### Floating-point inaccuracies
-
-This package is still a work in progress, and all bugs haven't been zapped yet. Some differences might exist in floating-point arithmetic, eg. 
-
-```julia
-julia> Pi^5 |> float
-306.01968478528136
-
-julia> π^5 |> float
-306.0196847852814
-```
-The equivalence with `π` is therefore not always exact. Such differences are however not unexpected in floating-point arithmetic, as repeated multiplication is not equivalent to exponentiation.
-
-```julia
-julia> π*π*π*π*π == π^5
-false
-```
-
 ### Type-instability
 
 The type `PiExpTimes{N}` stores the exponent as a type-parameter, therefore exponentiation is not type-stable in general. 
 
 ### Floating-point promotion
 
-`PiExpTimes{N}` is promoted to float as soon as it encounters a number other than another `PiExpTimes{N}`. This means operations like addition will result in floating-point numbers instead of a polynomial.
+`PiExpTimes{N}` is promoted to float as soon as it encounters a number other than another `PiExpTimes{N}` in additions and subtractions.
 
 ```julia
 julia> Pi^2 + Pi
 13.011197054679151
 ```
 
-This also means arrays of `PiExpTimes{N}` containing mixed types needs to be created by specifically supplying a type. This may be any concrete `PiExpTimes{N,T}` type, a `PiExpTimes` type that can catch them all, or a real type such as `Float64`
+Arrays of mixed types will involve conversion to the lowest exponent, unless a specific type is specified.
 
 ```julia
-julia> [Pi^2,Pi] # both get promoted to Float64 by default
-2-element Array{Float64,1}:
- 9.869604401089358
- 3.141592653589793
+julia> [Pi,Pi^2]
+2-element Array{PiExpTimes{1,Float64},1}:
+                   Pi
+ 3.141592653589793*Pi
  
 julia> PiExpTimes[Pi,Pi^2] # this preserves the type of each element, but is not a concrete type
 2-element Array{PiExpTimes,1}:

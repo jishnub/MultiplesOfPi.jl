@@ -3,6 +3,7 @@ module MultiplesOfPi
 export PiExpTimes
 export PiTimes
 export Pi
+export simplify
 
 """
 	PiExpTimes{n}(x)
@@ -23,45 +24,54 @@ struct PiExpTimes{N,T<:Real} <: AbstractIrrational
 		@assert N isa Integer
 		new{N,T}(x)
 	end
+	function PiExpTimes{N,Real}(x::T) where {N,T<:Real}
+		@assert N isa Integer
+		new{N,Real}(x)
+	end
 	function PiExpTimes{N,PiExpTimes{M,T}}(p::PiExpTimes{M,T}) where {N,M,T<:Real}
 		@assert N isa Integer
 		new{N,PiExpTimes{M,T}}(p)
+	end
+	function PiExpTimes{N,Real}(p::PiExpTimes{M,T}) where {N,M,T<:Real}
+		@assert N isa Integer
+		new{N,Real}(p)
 	end
 end
 
 function PiExpTimes{N,T}(x::Real) where {N,T}
 	PiExpTimes{N,T}(convert(T,x))
 end
+function PiExpTimes{N,PiExpTimes{0,T}}(x::Real) where {N,T<:Real}
+	PiExpTimes{N,T}(convert(T,x))
+end
 
 # Type T is inferred from x
 PiExpTimes{N}(x::T) where {N,T<:Real} = PiExpTimes{N,T}(x)
-PiExpTimes{0}(x::Real) = x
-function PiExpTimes{0,T}(x::Real) where {T<:Real}
-	convert(T,x)
+
+for R in (Real,PiExpTimes)
+	@eval PiExpTimes{0}(x::$R) = x
+	@eval PiExpTimes{0,T}(x::$R) where {T<:Real} = convert(T,x)
 end
 function PiExpTimes{0,PiExpTimes{M,T}}(p::PiExpTimes{M}) where {M,T<:Real}
 	convert(PiExpTimes{M,T},p)
 end
-PiExpTimes{0}(p::PiExpTimes) = p
 
 PiExpTimes{N}(p::PiExpTimes{M}) where {N,M} = PiExpTimes{N+M}(p.x)
+
 function PiExpTimes{N,T}(p::PiExpTimes{M}) where {N,M,T<:Real}
 	PiExpTimes{N+M}(convert(T,p.x))
 end
 PiExpTimes{N,T}(p::PiExpTimes{N,T}) where {N,T<:Real} = PiExpTimes{2N}(p.x)
-function PiExpTimes{N,T}(p::PiExpTimes{N}) where {N,T<:Real}
-	PiExpTimes{2N}(convert(T,p.x))
-end
 
 function PiExpTimes{N,PiExpTimes{M,T}}(p::PiExpTimes{M,R}) where {N,M,T<:Real,R<:Real}
 	p_new = convert(PiExpTimes{M,T},p)
-	PiExpTimes{N,PiExpTimes{M,T}}(p_new)
-end
-function PiExpTimes{N,PiExpTimes{M,Real}}(p::PiExpTimes{M,R}) where {N,M,R<:Real}
-	PiExpTimes{N,PiExpTimes{M,R}}(p)
+	PiExpTimes{N,typeof(p_new)}(p_new)
 end
 function PiExpTimes{N,PiExpTimes{M}}(p::PiExpTimes{M,T}) where {N,M,T<:Real}
 	PiExpTimes{N,PiExpTimes{M,T}}(p)
+end
+function PiExpTimes{N,PiExpTimes{0,T}}(p::PiExpTimes{M,R}) where {N,M,T<:Real,R<:Real}
+	PiExpTimes{N,T}(p)
 end
 
 PiExpTimes{N}(::Irrational{:π}) where {N} = PiExpTimes{N+1}(1)
@@ -101,10 +111,11 @@ julia> sin(pi)
 const Pi = PiTimes(1)
 
 # Helper functions to get rid of nesting
-netexponent(p::T) where {T} = netexponent(T)
-netexponent(::Type{PiExpTimes{N,T}}) where {N,T<:PiExpTimes} = N + netexponent(T)
-netexponent(::Type{PiExpTimes{N,T}}) where {N,T<:Real} = N
-netexponent(::Type{PiExpTimes{N,<:Real}}) where {N} = N
+netexponent(p::PiExpTimes{N,<:Real}) where {N} = N + netexponent(p.x)
+netexponent(::Real) = 0
+netexponent(::Type{PiExpTimes{N,R}}) where {N,R} = N + netexponent(R)
+netexponent(::Type{PiExpTimes{N}}) where {N,R} = N
+netexponent(::Type{Real}) = error("Ambiguous exponent")
 netexponent(::Type{<:Real}) = 0
 
 rootvaltype(::T) where {T} = rootvaltype(T)
@@ -112,43 +123,33 @@ rootvaltype(::Type{PiExpTimes{N,T}}) where {N,T<:PiExpTimes} = rootvaltype(T)
 rootvaltype(::Type{PiExpTimes{N,T}}) where {N,T<:Real} = T
 rootvaltype(::Type{T}) where {T<:Real} = T
 
-rootval(p::PiExpTimes) = rootval(p.x)
+rootval(p::PiExpTimes{<:Any,<:Real}) = rootval(p.x)
 rootval(x::Real) = x
 
-function setconcreterootvaltype(::Type{PiExpTimes{N,T}},U::Type{<:Real}) where {N,T<:PiExpTimes}
-	PiExpTimes{N,setconcreterootvaltype(T,U)}
-end
-function setconcreterootvaltype(::Type{PiExpTimes{N,T}},U::Type{<:Real}) where {N,T<:Real}
-	PiExpTimes{N,T}
-end
-function setconcreterootvaltype(::Type{PiExpTimes{N}},U::Type{<:Real}) where {N}
-	PiExpTimes{N,U}
-end
+"""
+	simplify(p)
 
-function rejectUnionAllroot(T::Type{<:Real},p::Real)
-	rejectUnionAllroot(T,rootvaltype(p))
-end
-function rejectUnionAllroot(T::Type{<:PiExpTimes},U::Type{<:Real})
-	if rootvaltype(T) isa UnionAll
-		msg ="UnionAll types are not allowed. "
-		newtype = setconcreterootvaltype(T,U)
-		msg *= "Consider converting to $newtype"
-		throw(ArgumentError(msg))
-	end
-end
-function rejectUnionAllroot(T::Type{<:Real},U::Type{<:Real})
-	if rootvaltype(T) isa UnionAll
-		msg ="UnionAll types are not allowed. "
-		throw(ArgumentError(msg))
-	end
-end
+Simplify a nested expression involving `PiExpTimes` 
+and reduce it to a single object that is not nested.
 
-simplify(p::PiExpTimes) = p
-function simplify(p::PiExpTimes{<:Any,<:PiExpTimes})
+# Examples
+```jldoctest
+julia> PiExpTimes{2,PiExpTimes{1,Int}}(Pi) |> MultiplesOfPi.simplify
+Pi^3
+```
+"""
+simplify(x) = x
+simplify(p::PiExpTimes{0}) = simplify(p.x)
+simplify(p::PiExpTimes{N,Real}) where {N} = PiExpTimes{N}(1)*p.x
+function simplify(p::PiExpTimes{M,<:PiExpTimes}) where {M}
 	T = rootvaltype(p)
 	N = netexponent(p)
 	x = rootval(p)
-	PiExpTimes{N,T}(x)
+	simplify(PiExpTimes{N,T}(x))
+end
+simplify(p::PiExpTimes{0,<:PiExpTimes}) where {N} = simplify(rootval(p))
+function simplify(p::Complex{<:PiExpTimes{<:Any,<:PiExpTimes}})
+	Complex(simplify(p.re),simplify(p.im))
 end
 
 # Comparison
@@ -163,7 +164,8 @@ Base.:(<)(::Irrational{:π},p::PiTimes) = p.x > one(p.x)
 
 Base.:(==)(p::PiExpTimes{N},q::PiExpTimes{N}) where {N} = p.x == q.x
 function Base.:(==)(p::PiExpTimes,q::PiExpTimes)
-	iszero(p.x) && iszero(q.x) ? true : float(p) == float(q)
+	iszero(p.x) && iszero(q.x) ? true : 
+	float(p) == float(q)
 end
 Base.:(==)(p::PiExpTimes{<:Any,<:PiExpTimes},q::PiExpTimes) = simplify(p) == q
 Base.:(==)(p::PiExpTimes,q::PiExpTimes{<:Any,<:PiExpTimes}) = p == simplify(q)
@@ -173,14 +175,17 @@ function Base.:(==)(p::PiExpTimes{<:Any,<:PiExpTimes},
 	simplify(p) == simplify(q)
 end
 
-Base.:(==)(p::PiExpTimes,y::Real) = float(p) == y
-Base.:(==)(y::Real,p::PiExpTimes) = float(p) == y
+Base.:(==)(p::PiExpTimes,y::Real) = float(simplify(p)) == y
+Base.:(==)(y::Real,p::PiExpTimes) = float(simplify(p)) == y
 
 Base.:(==)(::Irrational{:π},p::PiExpTimes) = false
 Base.:(==)(p::PiExpTimes,::Irrational{:π}) = false
 
-Base.:(==)(p::PiTimes,::Irrational{:π}) = isone(p.x)
-Base.:(==)(::Irrational{:π},p::PiTimes) = isone(p.x)
+Base.:(==)(::Irrational{:π},p::PiExpTimes{<:Any,<:PiExpTimes}) = (Pi == simplify(p))
+Base.:(==)(p::PiExpTimes{<:Any,<:PiExpTimes},::Irrational{:π}) = (Pi == simplify(p))
+
+Base.:(==)(p::PiTimes,::Irrational{:π}) = isone(simplify(p.x))
+Base.:(==)(::Irrational{:π},p::PiTimes) = isone(simplify(p.x))
 
 for T in (:Float64,:Float32,:Float16)
 	@eval begin 
@@ -245,7 +250,6 @@ Base.signbit(p::PiExpTimes) = signbit(p.x)
 @inline Base.cis(p::PiTimes) = Complex(cos(p),sin(p))
 
 Base.sinc(p::PiExpTimes) = sinc(float(p))
-Base.sinc(p::PiExpTimes{0}) = sinc(p.x)
 
 function Base.tan(p::PiTimes{T}) where {T}
 	iszero(p.x) && return p.x
@@ -385,8 +389,17 @@ function Base.:(//)(a::Complex{<:PiExpTimes{N}},b::Complex{<:PiExpTimes{N}}) whe
 end
 
 # Conversion and promotion
-function Base.promote_rule(::Type{PiExpTimes{N,R}},::Type{PiExpTimes{N,S}}) where {N,R,S}
+function Base.promote_rule(::Type{PiExpTimes{N,R}},::Type{PiExpTimes{N,S}}) where {N,R<:Real,S<:Real}
 	PiExpTimes{N,promote_type(R,S)}
+end
+function Base.promote_rule(::Type{<:PiExpTimes{N}},::Type{<:PiExpTimes{N}}) where {N}
+	PiExpTimes{N}
+end
+function Base.promote_rule(::Type{PiExpTimes{M,R}},::Type{PiExpTimes{N,S}}) where {M,N,R<:Real,S<:Real}
+	PiExpTimes{min(M,N),float(promote_type(R,S))}
+end
+function Base.promote_rule(::Type{<:PiExpTimes{M}},::Type{<:PiExpTimes{N}}) where {M,N}
+	PiExpTimes{min(M,N)}
 end
 
 Base.promote_rule(::Type{PiTimes{T}}, ::Type{Irrational{:π}}) where {T} = PiTimes{T}
@@ -403,36 +416,33 @@ end
 
 struct IncompatibleTypesError end
 Base.showerror(io::IO,e::IncompatibleTypesError) = print(io,
-	"Incompatible types")
+	"Incompatible types, try converting to a floating-point type or to Real")
 
-# Float to PiExpTimes or PiTimes
+# PiExpTimes to NonFloatTypes
 
-# PiExpTimes{0} is a special case, equivalent to identity
+function Base.convert(::Type{<:Union{Integer,Rational,AbstractIrrational}},p::PiExpTimes)
+	throw(IncompatibleTypesError())
+end
+
+# Real to PiExpTimes
+
+# # PiExpTimes{0} is a special case, equivalent to identity
 Base.convert(::Type{<:PiExpTimes{0}},x::Real) = x
 Base.convert(::Type{PiExpTimes{0,T}},x::Real) where {T<:Real} = convert(T,x)
 
+Base.convert(::Type{<:PiExpTimes{0}},p::PiExpTimes{N,R}) where {R<:Real,N} = p
+function Base.convert(::Type{PiExpTimes{0,T}},p::PiExpTimes{N,R}) where {T<:Real,R<:Real,N}
+	convert(T,p)
+end
+
 function Base.convert(::Type{<:PiExpTimes{N,P}},x::T) where {N,T<:Real,P<:Real}
-	# eg. convert(PiExpTimes{2,Int},2) == Int(2Pi^-2)*Pi^2
-	# This fails as Pi^-2 is not an Int
-	throw(IncompatibleTypesError())
-end
-# Conversion involving Real introduces nesting
-function Base.convert(::Type{PiExpTimes{N,Real}},x::T) where {N,T<:Real}
-	# eg. convert(PiExpTimes{2,Real},2) == 2Pi^-2*Pi^2
-	convert(PiExpTimes{N},x)
-end
-function Base.convert(::Type{<:PiExpTimes{N,P}},x::T) where {N,T<:Real,P<:AbstractFloat}
 	# eg. convert(PiExpTimes{2,Float64},2) == Float64(2/Pi^2)*Pi^2
+	# eg. convert(PiExpTimes{2,Real},2) == 2Pi^-2*Pi^2
 	PiExpTimes{N,P}(convert(P,PiExpTimes{-N}(x)))
 end
 function Base.convert(::Type{<:PiTimes{P}},x::T) where {T<:Real,P<:Real}
-	# eg. convert(PiTimes{Int},2) == Int(2Pi^-1)*Pi
-	# This fails as Pi^-1 is not an Int
-	# This method is provided for ambiguity resolution
-	throw(IncompatibleTypesError())
-end
-function Base.convert(::Type{<:PiTimes{P}},x::T) where {T<:Real,P<:AbstractFloat}
 	# eg. convert(PiTimes{Float64},2) == Float64(2Pi^-1)*Pi
+	# eg. convert(PiTimes{Real},2) == 2Pi^-1*Pi
 	PiTimes{P}(convert(P,PiExpTimes{-1}(x)))
 end
 function Base.convert(::Type{<:PiExpTimes{N}},x::T) where {N,T<:Real}
@@ -448,16 +458,16 @@ end
 
 # Conversion from real to nested
 function Base.convert(::Type{PiExpTimes{N,PiExpTimes{M,R}}},x::T) where {N,M,T<:Real,R<:Real}
-	# eg. convert(PiExpTimes{1,PiExpTimes{1,Float64}},2)
+	# eg. convert(PiExpTimes{1,PiExpTimes{1,Float64}},2) == Float64(2Pi^-2)*Pi*Pi
+	# eg. convert(PiExpTimes{1,PiExpTimes{1,Real}},2) == 2Pi^-2*Pi*Pi
+	# eg. convert(PiExpTimes{1,PiExpTimes{1,Int}},2) == Int(2Pi^-2)*Pi*Pi => error
 	# Error checks
-	rejectUnionAllroot(PiExpTimes{N,PiExpTimes{M,R}},x)
-
-	PiExpTimes{N,PiExpTimes{M,R}}(PiExpTimes{M,R}(x))
+	p_new = convert(PiExpTimes{M,R},PiExpTimes{-N}(x))
+	PiExpTimes{N,PiExpTimes{M,R}}(p_new)
 end
 function Base.convert(::Type{PiTimes{PiExpTimes{M,R}}},x::T) where {M,T<:Real,R<:Real}
 	# Error checks
-	rejectUnionAllroot(PiTimes{PiExpTimes{M,R}},x)
-	PiTimes{PiExpTimes{M,R}}(PiExpTimes{M,R}(x))
+	PiTimes{PiExpTimes{M,R}}(convert(PiExpTimes{M,R},PiExpTimes{-1}(x)))
 end
 
 # Irrational{π} to PiExpTimes or PiTimes
@@ -469,29 +479,16 @@ end
 
 # Special case, convert to bits types
 function Base.convert(::Type{PiExpTimes{N,T}},::Irrational{:π}) where {N,T<:Real}
-	# eg. convert(PiExpTimes{2,Int},π) == Int(1/π)*Pi^2
-	# This fails as 1/π is not an Int
-	throw(IncompatibleTypesError())
-end
-function Base.convert(::Type{PiExpTimes{N,T}},::Irrational{:π}) where {N,T<:AbstractFloat}
 	# eg. convert(PiExpTimes{2,Float64},π) == Float64(1/π)*Pi^2
-	# Error checks
-	rejectUnionAllroot(PiExpTimes{N,T},Pi)
-	PiExpTimes{N,T}(convert(T,PiExpTimes{1-N}(1)))
-end
-# Conversion to Real introduces nesting
-function Base.convert(::Type{PiExpTimes{N,Real}},::Irrational{:π}) where {N}
 	# eg. convert(PiExpTimes{2,Real},π) == Pi^-1*Pi^2
-	PiExpTimes{N,PiExpTimes{1-N,Int}}(PiExpTimes{1-N,Int}(1))
+	# eg. convert(PiExpTimes{2,Int},π) == Int(Pi^-1)*Pi^2 => error
+	PiExpTimes{N,T}(convert(T,PiExpTimes{1-N}(1)))
 end
 
 # Conversion to nested types from π
 function Base.convert(::Type{PiExpTimes{N,PiExpTimes{M,R}}},
 	::Irrational{:π}) where {N,M,R<:Real}
 	# eg. convert(PiExpTimes{2,PiExpTimes{-1,Int}},π) == Pi^-1*Pi^2
-	# Error checks
-	rejectUnionAllroot(PiExpTimes{N,PiExpTimes{M,R}},Pi)
-
 	p_new = convert(PiExpTimes{M,R},PiExpTimes{1-N}(1))
 	PiExpTimes{N,PiExpTimes{M,R}}(p_new)
 end
@@ -503,14 +500,15 @@ function Base.convert(::Type{PiExpTimes{N,PiExpTimes{M}}},
 end
 
 # Conversion to PiTimes from π
-Base.convert(::Type{<:PiTimes},::Irrational{:π}) = Pi
+Base.convert(::Type{PiTimes},::Irrational{:π}) = Pi
 function Base.convert(::Type{PiTimes{T}},::Irrational{:π}) where {T<:Real}
-	rejectUnionAllroot(PiTimes{T},Pi)
 	PiTimes{T}(convert(T,1))
 end
-function Base.convert(::Type{PiTimes{T}},::Irrational{:π}) where {T<:AbstractFloat}
-	rejectUnionAllroot(PiTimes{T},Pi)
-	PiTimes{T}(convert(T,1))
+# conversion to nested type from π
+function Base.convert(::Type{PiTimes{PiExpTimes{N,T}}},
+	::Irrational{:π}) where {N,T<:Real}
+
+	PiTimes{PiExpTimes{N,T}}(convert(PiExpTimes{N,T},1))
 end
 
 # Conversion from PiExpTimes to PiExpTimes
@@ -531,43 +529,27 @@ end
 function Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{M,R}) where {M,N,T<:Real,R<:Real}
 	# eg. convert(PiExpTimes{2,Int},Pi)
 	# This should fail as the result is Pi^-1*Pi^2 and Pi^-1 is not an Int
-	throw(IncompatibleTypesError())
-end
-function Base.convert(::Type{PiExpTimes{N,Real}},p::PiExpTimes{M,R}) where {M,N,R<:Real}
-	# eg. convert(PiExpTimes{2,Real},Pi) == Pi^-1*Pi^2
-	convert(PiExpTimes{N},p)
-end
-# Special case where the type is float
-# In this case the root value will be converted to float
-function Base.convert(::Type{PiExpTimes{N,T}},
-	p::PiExpTimes{M,R}) where {M,N,T<:AbstractFloat,R<:Real}
-	# eg. convert(PiExpTimes{2,Float64},Pi) == Float64(1/Pi)*Pi^2
-	# Error checks
-	rejectUnionAllroot(PiExpTimes{N,T},p)
 	
 	p_new = PiExpTimes{M-N}(p.x)
-	PiExpTimes{N}(convert(T,p_new))
+	PiExpTimes{N,T}(convert(T,p_new))
 end
 
 # Special cases with same exponent
 # Most general special case without type specified
-Base.convert(::Type{<:PiExpTimes{N}},p::PiExpTimes{N}) where {N} = p
+Base.convert(::Type{PiExpTimes{N}},p::PiExpTimes{N}) where {N} = p
 # Specified types must be compatible otherwise
 function Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,R}) where {N,T<:Real,R<:Real}
 	# Error checks
-	rejectUnionAllroot(PiExpTimes{N,T},p)
-	PiExpTimes{N}(convert(T,p.x))
+	p_new = convert(T,p.x)
+	PiExpTimes{N,T}(p_new)
 end
 Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,T}) where {N,T<:Real} = p
-Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,T}) where {N,T<:AbstractFloat} = p
 
 # General nested case
 function Base.convert(::Type{PiExpTimes{N,PiExpTimes{M,R}}},
 	p::PiExpTimes{Q,T}) where {N,M,Q,T<:Real,R<:Real}
 	
-	rejectUnionAllroot(PiExpTimes{N,PiExpTimes{M,R}},p)
-
-	# How this works: convert(PiExpTimes{2,PiExpTimes{2,Int}},Pi^4) == Pi^2*Pi^2
+	# eg. convert(PiExpTimes{2,PiExpTimes{2,Int}},Pi^4) == Pi^2*Pi^2
 	p_new = convert(PiExpTimes{M,R},PiExpTimes{Q-N,T}(p.x))
 	PiExpTimes{N,PiExpTimes{M,R}}(p_new)
 end
@@ -575,17 +557,15 @@ end
 function Base.convert(::Type{PiTimes{PiExpTimes{M,R}}},
 	p::PiExpTimes{Q,T}) where {M,Q,T<:Real,R<:Real}
 	
-	rejectUnionAllroot(PiTimes{PiExpTimes{M,R}},p)
-
 	# eg. convert(PiTimes{PiExpTimes{3,Float64}},Pi^3) == Float64(1/Pi)*Pi^3*Pi
-	PiTimes{PiExpTimes{M,R}}(convert(PiExpTimes{M,R},PiExpTimes{Q-1,T}(p.x)))
+	p_new = convert(PiExpTimes{M,R},PiExpTimes{Q-1,T}(p.x))
+	PiTimes{PiExpTimes{M,R}}(p_new)
 end
 # Even more special case
 function Base.convert(::Type{PiTimes{PiExpTimes{M,R}}},
 	p::PiTimes) where {M,R<:Real}
 	
 	# eg. convert(PiTimes{PiExpTimes{2,Float64}},Pi) == Float64(1/Pi^2)*Pi^2*Pi
-	rejectUnionAllroot(PiTimes{PiExpTimes{M,R}},p)
 
 	p_new = convert(PiExpTimes{M,R},p.x)
 	PiTimes{PiExpTimes{M,R}}(p_new)
@@ -596,24 +576,15 @@ function Base.convert(::Type{PiTimes{PiExpTimes{M,R}}},
 end
 
 # Conversions to PiTimes
-Base.convert(::Type{<:PiTimes},p::PiTimes) = p
+Base.convert(::Type{PiTimes},p::PiTimes) = p
 Base.convert(::Type{PiTimes{T}},p::PiTimes{T}) where {T<:Real} = p
-Base.convert(::Type{PiTimes{T}},p::PiTimes{T}) where {T<:AbstractFloat} = p
-function Base.convert(::Type{PiTimes{T}},p::PiTimes{R}) where {T<:AbstractFloat,R<:Real}
+
+function Base.convert(::Type{PiTimes{T}},p::PiTimes{R}) where {T<:Real,R<:Real}
 	PiTimes{T}(convert(T,p.x))
 end
-Base.convert(::Type{PiTimes{T}},p::PiTimes) where {T<:Real} = PiTimes{T}(p.x)
+
 function Base.convert(::Type{PiTimes{T}},p::PiExpTimes{N,R}) where {N,T<:Real,R<:Real}
-	# This will catch cases like convert(PiTimes{Int},Pi^2) = Int(1/Pi)*Pi^2
-	# This fails because 1/Pi is not an Int
-	throw(IncompatibleTypesError())
-end
-function Base.convert(::Type{PiTimes{Real}},p::PiExpTimes{N,R}) where {N,R<:Real}
-	# This will catch cases like convert(PiTimes{Real},Pi^2) = Pi^-1*Pi^2
-	PiTimes{PiExpTimes{N-1,R}}(PiExpTimes{N-1,R}(p.x))
-end
-function Base.convert(::Type{PiTimes{T}},p::PiExpTimes{N,R}) where {N,T<:AbstractFloat,R<:Real}
-	# This will catch cases like convert(PiTimes{Float64},Pi^2) = Float64(Pi)*Pi
+	# eg. convert(PiTimes{Float64},Pi^2) = Float64(Pi)*Pi
 	PiTimes{T}(convert(T,PiExpTimes{N-1,R}(p.x)))
 end
 
