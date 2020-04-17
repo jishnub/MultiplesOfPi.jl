@@ -467,34 +467,10 @@ function Base.convert(::Type{PiExpTimes{N,P}},x::T) where {N,T<:Real,P<:Real}
 	# eg. convert(PiExpTimes{2,Real},2) == 2Pi^-2*Pi^2
 	PiExpTimes{N,P}(convert(P,PiExpTimes{-N}(x)))
 end
-function Base.convert(::Type{PiTimes{P}},x::T) where {T<:Real,P<:Real}
-	# eg. convert(PiTimes{Float64},2) == Float64(2Pi^-1)*Pi
-	# eg. convert(PiTimes{Real},2) == 2Pi^-1*Pi
-	PiTimes{P}(convert(P,PiExpTimes{-1}(x)))
-end
 function Base.convert(::Type{PiExpTimes{N}},x::T) where {N,T<:Real}
 	# eg. convert(PiExpTimes{2},2)
 	p_new = PiExpTimes{-N,T}(x)
 	PiExpTimes{N,PiExpTimes{-N,T}}(p_new)
-end
-function Base.convert(::Type{PiTimes},x::T) where {T<:Real}
-	# eg. convert(PiTimes,2) == 2Pi^-1*Pi
-	p_new = PiExpTimes{-1,T}(x)
-	PiTimes{PiExpTimes{-1,T}}(p_new)
-end
-
-# Conversion from real to nested
-function Base.convert(::Type{PiExpTimes{N,PiExpTimes{M,R}}},x::T) where {N,M,T<:Real,R<:Real}
-	# eg. convert(PiExpTimes{1,PiExpTimes{1,Float64}},2) == Float64(2Pi^-2)*Pi*Pi
-	# eg. convert(PiExpTimes{1,PiExpTimes{1,Real}},2) == 2Pi^-2*Pi*Pi
-	# eg. convert(PiExpTimes{1,PiExpTimes{1,Int}},2) == Int(2Pi^-2)*Pi*Pi => error
-	# Error checks
-	p_new = convert(PiExpTimes{M,R},PiExpTimes{-N}(x))
-	PiExpTimes{N,PiExpTimes{M,R}}(p_new)
-end
-function Base.convert(::Type{PiTimes{PiExpTimes{M,R}}},x::T) where {M,T<:Real,R<:Real}
-	# Error checks
-	PiTimes{PiExpTimes{M,R}}(convert(PiExpTimes{M,R},PiExpTimes{-1}(x)))
 end
 
 # Irrational{π} to PiExpTimes or PiTimes
@@ -513,32 +489,6 @@ function Base.convert(::Type{PiExpTimes{N,T}},::Irrational{:π}) where {N,T<:Rea
 	# eg. convert(PiExpTimes{2,Real},π) == Pi^-1*Pi^2
 	# eg. convert(PiExpTimes{2,Int},π) == Int(Pi^-1)*Pi^2 => error
 	PiExpTimes{N,T}(convert(T,PiExpTimes{1-N}(1)))
-end
-
-# Conversion to nested types from π
-function Base.convert(::Type{PiExpTimes{N,PiExpTimes{M,R}}},
-	::Irrational{:π}) where {N,M,R<:Real}
-	# eg. convert(PiExpTimes{2,PiExpTimes{-1,Int}},π) == Pi^-1*Pi^2
-	p_new = convert(PiExpTimes{M,R},PiExpTimes{1-N}(1))
-	PiExpTimes{N,PiExpTimes{M,R}}(p_new)
-end
-function Base.convert(::Type{PiExpTimes{N,PiExpTimes{M}}},
-	::Irrational{:π}) where {N,M,R<:Real}
-
-	p_new = convert(PiExpTimes{M},PiExpTimes{1-N}(1))
-	convert(PiExpTimes{N,PiExpTimes{M}},p_new)
-end
-
-# Conversion to PiTimes from π
-Base.convert(::Type{PiTimes},::Irrational{:π}) = Pi
-function Base.convert(::Type{PiTimes{T}},::Irrational{:π}) where {T<:Real}
-	PiTimes{T}(convert(T,1))
-end
-# conversion to nested type from π
-function Base.convert(::Type{PiTimes{PiExpTimes{N,T}}},
-	::Irrational{:π}) where {N,T<:Real}
-
-	PiTimes{PiExpTimes{N,T}}(convert(PiExpTimes{N,T},1))
 end
 
 # Conversion from PiExpTimes to PiExpTimes
