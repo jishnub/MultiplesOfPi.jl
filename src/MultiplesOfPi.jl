@@ -515,24 +515,14 @@ function Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{M,R}) where {M,N,T<:
 end
 
 # Special cases with same exponent
-# Most general special case without type specified
 Base.convert(::Type{PiExpTimes{N}},p::PiExpTimes{N}) where {N} = p
-# Specified types must be compatible otherwise
+Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,T}) where {N,T<:Real} = p
+Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,T}) where {N,T<:PiExpTimes{M,<:Real} where M} = p
+
 function Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,R}) where {N,T<:Real,R<:Real}
 	# Error checks
 	p_new = convert(T,p.x)
 	PiExpTimes{N,T}(p_new)
-end
-Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,T}) where {N,T<:Real} = p
-Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,T}) where {N,T<:PiExpTimes{M,<:Real} where M} = p
-
-# General nested case
-function Base.convert(::Type{PiExpTimes{N,PiExpTimes{M,R}}},
-	p::PiExpTimes{Q,T}) where {N,M,Q,T<:Real,R<:Real}
-	
-	# eg. convert(PiExpTimes{2,PiExpTimes{2,Int}},Pi^4) == Pi^2*Pi^2
-	p_new = convert(PiExpTimes{M,R},PiExpTimes{Q-N,T}(p.x))
-	PiExpTimes{N,PiExpTimes{M,R}}(p_new)
 end
 
 # Pretty-printing
