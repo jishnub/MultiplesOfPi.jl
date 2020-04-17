@@ -765,7 +765,8 @@ end
         @test p + p === PiTimes(2p.x)
         @test p + q === PiTimes(p.x + q.x)
         @test r + r === PiExpTimes{2}(2r.x)
-        @test p + r === float(p) + float(r)
+        @test p + r === PiTimes(p.x + r.x*π)
+        @test p + r ≈ float(p) + float(r)
         @test z + z === 6
     end
 
@@ -773,7 +774,8 @@ end
         @test p - p === PiTimes(0) == 0
         @test p - q === PiTimes(p.x - q.x)
         @test r - r === PiExpTimes{2}(zero(r.x)) == 0
-        @test p - r === float(p) - float(r)
+        @test p - r === PiTimes(p.x - r.x*π)
+        @test p - r ≈ float(p) - float(r)
         @test z - z === 0
     end
 

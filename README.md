@@ -140,15 +140,17 @@ The type `PiExpTimes{N}` stores the exponent as a type-parameter, therefore expo
 
 ### Floating-point promotion
 
-`PiExpTimes{N}` is promoted to float as soon as it encounters a number other than another `PiExpTimes{N}` in additions and subtractions.
+Addition and subtraction involving mixed exponents of `Pi` will involve floating-point conversions, and the resulting expression will have the minimum exponent out of the terms being summed.
 
 ```julia
 julia> Pi + 3Pi
 4Pi
 
 julia> Pi + 3Pi^2
-32.75040585685787
+10.42477796076938*Pi
 ```
+
+This fits with the intuition of `Pi` being a common factor, and the summation being factorized as `Pi + 3Pi^2 == Pi*(1 + 3Pi)`.
 
 ### Conversion vs construction
 

@@ -266,6 +266,11 @@ end
 # Arithmetic operators
 
 Base.:(+)(p1::PiExpTimes{N},p2::PiExpTimes{N}) where {N} = PiExpTimes{N}(p1.x + p2.x)
+function Base.:(+)(p1::PiExpTimes{M},p2::PiExpTimes{N}) where {M,N}
+	p1conv = convert(PiExpTimes{min(M,N)},p1)
+	p2conv = convert(PiExpTimes{min(M,N)},p2)
+	PiExpTimes{min(M,N)}(p1conv.x + p2conv.x)
+end
 Base.:(+)(p1::PiExpTimes{0},p2::PiExpTimes{0}) = p1.x + p2.x
 
 Base.:(+)(p::PiTimes,::Irrational{:π}) = PiTimes(p.x + one(p.x))
@@ -275,6 +280,11 @@ Base.:(-)(p::PiExpTimes{N}) where {N} = PiExpTimes{N}(-p.x)
 Base.:(-)(p::PiExpTimes{0}) = -p.x
 
 Base.:(-)(p1::PiExpTimes{N},p2::PiExpTimes{N}) where {N} = PiExpTimes{N}(p1.x-p2.x)
+function Base.:(-)(p1::PiExpTimes{M},p2::PiExpTimes{N}) where {M,N}
+	p1conv = convert(PiExpTimes{min(M,N)},p1)
+	p2conv = convert(PiExpTimes{min(M,N)},p2)
+	PiExpTimes{min(M,N)}(p1conv.x - p2conv.x)
+end
 Base.:(-)(p1::PiExpTimes{0},p2::PiExpTimes{0}) = p1.x-p2.x
 
 Base.:(-)(p::PiTimes,::Irrational{:π}) = PiTimes(p.x - one(p.x))
