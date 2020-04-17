@@ -74,7 +74,7 @@ import MultiplesOfPi: IncompatibleTypesError, simplify
         @test PiTimes{PiTimes}(Pi) == Pi^2
         @test PiTimes{PiTimes{Int}}(Pi) == Pi^2
 
-        @test PiTimes{PiTimes}(1) isa PiExpTimes{1,PiExpTimes{1,PiExpTimes{-1,Int64}}}
+        @test PiTimes{PiTimes}(1) isa PiExpTimes{1,PiExpTimes{1,PiExpTimes{-1,Int}}}
         @test PiTimes{PiTimes}(1) == Pi
 
         @testset "PiExpTimes{0}" begin
@@ -302,7 +302,7 @@ end
             @test zero(PiExpTimes{0,T}(1)) == zero(T)
         end
 
-        @test zero(PiTimes{PiTimes}(1)) isa PiExpTimes{1,PiExpTimes{1,PiExpTimes{-1,Int64}}}
+        @test zero(PiTimes{PiTimes}(1)) isa PiExpTimes{1,PiExpTimes{1,PiExpTimes{-1,Int}}}
         @test zero(PiTimes{PiTimes}(1)) === PiTimes{PiTimes}(0)
     end
 end
