@@ -180,7 +180,7 @@ julia> Pi + 3Pi^2
 10.42477796076938*Pi
 ```
 
-This fits with the intuition the expression being factorized as `Pi + 3Pi^2 == Pi*(1 + 3Pi)`.
+This fits with the intuition of the expression being factorized as `Pi + 3Pi^2 == Pi*(1 + 3Pi)`.
 
 Note that `π` is promoted to `Pi` in such operations, so we obtain 
 
@@ -203,7 +203,7 @@ Pi^-1*Pi
 
 ### Promotion of mixed types
 
-`promote` and `promote_type` work differently with types having different exponents. `promote` converts both to the same type which has the minimum exponent, whereas `promote_type` leaves the exponent as a free parameter.
+`promote` and `promote_type` work differently with types having different exponents. `promote` converts both the types to one that has the minimum exponent, whereas `promote_type` leaves the exponent as a free parameter.
 
 ```julia
 julia> promote(Pi,Pi^2) |> typeof
@@ -213,7 +213,7 @@ julia> promote_type(typeof(Pi),typeof(Pi^2))
 PiExpTimes{N,Int64} where N
 ```
 
-This is so that structs of `PiTimes` do not lose accuracy in conversion. 
+This is so that structs of `PiTimes` &mdash; such as complex numbers &mdash; do not lose accuracy in conversion. The behaviour is explained below with some examples:
 
 #### Arrays of mixed types
 
