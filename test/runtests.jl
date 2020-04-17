@@ -452,7 +452,7 @@ end
                 @test float(PiExpTimes{0,Int}(1)) === Float64(1)
             end
         end
-        @test "PiTimes to non-float types" begin
+        @testset "PiTimes to non-float types" begin
             @test_throws IncompatibleTypesError convert(Int,Pi)
             @test_throws IncompatibleTypesError convert(Rational{Int},Pi)
             @test_throws IncompatibleTypesError convert(Irrational{:π},Pi)
