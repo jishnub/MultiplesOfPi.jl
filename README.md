@@ -150,7 +150,7 @@ julia> Pi + 3Pi^2
 10.42477796076938*Pi
 ```
 
-This fits with the intuition of `Pi` being a common factor, and the summation being factorized as `Pi + 3Pi^2 == Pi*(1 + 3Pi)`.
+This fits with the intuition the expression being factorized as `Pi + 3Pi^2 == Pi*(1 + 3Pi)`.
 
 ### Conversion vs construction
 

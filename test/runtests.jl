@@ -409,6 +409,8 @@ end
         @test t isa Tuple{PiTimes{Real},PiTimes{Real}}
         @test t[1].x === 1
         @test t[2].x === Pi
+        t = promote(Pi,1.0Pi)
+        @test t isa Tuple{PiExpTimes{1,Float64},PiExpTimes{1,Float64}}
     end
     @testset "convert" begin
         @testset "PiExpTimes to float" begin
@@ -449,6 +451,11 @@ end
                 @test AbstractFloat(PiExpTimes{0,Int}(1)) === Float64(1)
                 @test float(PiExpTimes{0,Int}(1)) === Float64(1)
             end
+        end
+        @test "PiTimes to non-float types" begin
+            @test_throws IncompatibleTypesError convert(Int,Pi)
+            @test_throws IncompatibleTypesError convert(Rational{Int},Pi)
+            @test_throws IncompatibleTypesError convert(Irrational{:π},Pi)
         end
         @testset "Real to PiExpTimes" begin
             @testset "Irrational to PiTimes" begin
