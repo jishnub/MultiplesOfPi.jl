@@ -1,6 +1,7 @@
 using MultiplesOfPi
 using Test
-import MultiplesOfPi: IncompatibleTypesError, simplify
+import MultiplesOfPi: IncompatibleTypesError, simplify, 
+                        netexponent, rootvaltype, rootval
 
 @testset "Constructor" begin
     @testset "PiTimes" begin
@@ -16,6 +17,9 @@ import MultiplesOfPi: IncompatibleTypesError, simplify
         @test PiTimes(pi) === PiTimes(PiTimes(1))
         @test PiTimes(PiTimes(pi)) === PiTimes(PiTimes(PiTimes(1)))
 
+        @test PiTimes{Float64}(Pi) === PiTimes(Float64(π))
+        @test_throws IncompatibleTypesError PiTimes{Int}(Pi)
+
         @testset "PiTimes{Real}" begin
             @test PiTimes{Real}(1) isa PiTimes{Real}
             @test PiTimes{Real}(1).x isa Int
@@ -26,9 +30,10 @@ import MultiplesOfPi: IncompatibleTypesError, simplify
             @test PiTimes{Real}(Pi).x === Pi
         end
 
-        @testset "neseted PiExpTimes{0}" begin
+        @testset "nested PiExpTimes{0}" begin
             @test PiTimes{PiExpTimes{0,Int}}(3) === PiTimes(3)
             @test PiTimes{PiExpTimes{0,Float64}}(3) === PiTimes{Float64}(3)
+            @test PiTimes{PiExpTimes{0,Float64}}(Pi) === PiTimes(float(Pi))
         end
 
         @testset "Irrational{:π}" begin
@@ -49,8 +54,8 @@ import MultiplesOfPi: IncompatibleTypesError, simplify
         @test PiExpTimes{-2}(Pi^2) === 1
         @test PiExpTimes{-2}(1.0Pi^2) === 1.0
         @test PiExpTimes{2}(Pi^-2) === 1.0
-        @test PiExpTimes{2,Int}(Pi^2) === Pi^4
-        @test PiExpTimes{2,Float64}(Pi^2) === 1.0Pi^4
+        @test_throws IncompatibleTypesError PiExpTimes{2,Int}(Pi^2)
+        @test PiExpTimes{2,Float64}(Pi^2) === PiExpTimes{2}(Float64(π)^2)
 
         @test PiExpTimes{2,PiTimes}(Pi) === PiExpTimes{2,PiExpTimes{1}}(Pi)
         @test PiExpTimes{2,PiTimes{Int}}(Pi) === PiExpTimes{2,PiExpTimes{1,Int}}(Pi)
@@ -115,39 +120,44 @@ end
 
 @testset "Rootval and exponent" begin
     @testset "netexponent" begin
-        @test MultiplesOfPi.netexponent(Pi) === 1
-        @test MultiplesOfPi.netexponent(PiTimes(3.0)) === 1
-        @test MultiplesOfPi.netexponent(PiTimes{Int}(4)) === 1
-        @test MultiplesOfPi.netexponent(PiExpTimes{2}(4)) === 2
-        @test MultiplesOfPi.netexponent(PiExpTimes{2,Real}(4)) === 2
-        @test MultiplesOfPi.netexponent(PiExpTimes{2,Int}(4)) === 2
-        @test MultiplesOfPi.netexponent(PiExpTimes{2,PiTimes}(Pi)) === 3
-        @test MultiplesOfPi.netexponent(PiExpTimes{2,PiTimes{Int}}(Pi)) === 3
-        @test MultiplesOfPi.netexponent(
+        @test netexponent(Pi^0) === 0
+        @test netexponent(Pi) === 1
+        @test netexponent(PiTimes(3.0)) === 1
+        @test netexponent(PiTimes{Int}(4)) === 1
+        @test netexponent(PiExpTimes{2}(4)) === 2
+        @test netexponent(PiExpTimes{2,Real}(4)) === 2
+        @test netexponent(PiExpTimes{2,Int}(4)) === 2
+        @test netexponent(PiExpTimes{2,PiTimes}(Pi)) === 3
+        @test netexponent(PiExpTimes{2,PiTimes{Int}}(Pi)) === 3
+        @test netexponent(
             PiExpTimes{2,PiTimes{PiExpTimes{2}}}(PiTimes{PiExpTimes{2}}(Pi^2))) === 5
-        @test MultiplesOfPi.netexponent(
+        @test netexponent(
             PiExpTimes{2,PiTimes{PiExpTimes{2,Int}}}(PiTimes{PiExpTimes{2}}(Pi^2))) === 5
     end
     @testset "rootval" begin
-        @test MultiplesOfPi.rootval(Pi) === 1
-        @test MultiplesOfPi.rootval(Pi^2) === 1
-        @test MultiplesOfPi.rootval(3Pi) === 3
-        @test MultiplesOfPi.rootval(PiTimes{PiExpTimes{2,Float64}}(1.0Pi^2)) === 1.0
+        @test rootval(Pi) === 1
+        @test rootval(Pi^2) === 1
+        @test rootval(3Pi) === 3
+        @test rootval(PiTimes{PiExpTimes{2,Float64}}(1.0Pi^2)) === 1.0
     end
     @testset "rootvaltype" begin
-        @test MultiplesOfPi.rootvaltype(Pi) === Int
-        @test MultiplesOfPi.rootvaltype(PiTimes{Int}) === Int
-        @test MultiplesOfPi.rootvaltype(Pi^2) === Int
-        @test MultiplesOfPi.rootvaltype(PiExpTimes{2,Int}) === Int
-        @test MultiplesOfPi.rootvaltype(2.0Pi^2) === Float64
-        @test MultiplesOfPi.rootvaltype(PiTimes{PiExpTimes{2,Float64}}(1.0Pi^2)) === Float64
+        @test rootvaltype(Pi) === Int
+        @test rootvaltype(PiTimes{Int}) === Int
+        @test rootvaltype(Pi^2) === Int
+        @test rootvaltype(PiExpTimes{2,Int}) === Int
+        @test rootvaltype(2.0Pi^2) === Float64
+        @test rootvaltype(PiTimes{PiExpTimes{2,Float64}}(1.0Pi^2)) === Float64
 
         p = convert(PiTimes{PiExpTimes{-1,Real}}, π)
-        @test MultiplesOfPi.rootvaltype(p) === Real
+        @test rootvaltype(p) === Real
     end
     @testset "simplify" begin
-        @test MultiplesOfPi.simplify(PiTimes{PiExpTimes{2,Float64}}(1.0Pi^2)) === 1.0Pi^3
-        @test MultiplesOfPi.simplify(convert(PiTimes{PiExpTimes{-1,Float64}},1)) === 1.0
+        @test simplify(PiTimes{PiExpTimes{2,Float64}}(1.0Pi^2)) === 1.0Pi^3
+        @test simplify(convert(PiTimes{PiExpTimes{-1,Float64}},1)) === 1.0
+        z = simplify(Complex(Pi,Pi^2))
+        @test z isa Complex{PiExpTimes{1,Real}}
+        @test z.re.x === 1
+        @test z.im.x === Pi
     end
 end
 
@@ -192,6 +202,8 @@ end
             z² = PiExpTimes{2}(0)
             z³ = PiExpTimes{3}(0)
 
+            q = PiTimes{PiTimes}(1)
+
             @test Pi² == Pi²
             @test Pi² == π^2
             @test π^2 == Pi²
@@ -208,8 +220,18 @@ end
             @test !(Pi² == π)
             @test !(π == Pi²)
 
+            @test q == π
+            @test π == q
+
             @test z² == z³
             @test z² == 0
+        end
+        @testset "nested" begin
+            p = PiTimes{PiTimes}(2)
+            q = PiTimes{PiExpTimes{2}}(2)
+            @test p == 2Pi
+            @test 2Pi == p
+            @test p == q
         end
     end
 end
@@ -337,6 +359,8 @@ end
                         @test promote_type(PiExpTimes{2,t2},PiExpTimes{2,t1}) === PiExpTimes{2,t1}
                     end
                 end
+                @test promote_rule(PiExpTimes{2},PiExpTimes{2}) === PiExpTimes{2}
+                @test promote_type(PiExpTimes{2},PiExpTimes{2}) === PiExpTimes{2}
             end
             @testset "PiExpTimes{2} and PiTimes" begin
                 for t in (Int8, Int16, Int32, Int64, Int128, Bool, UInt8, UInt16, UInt32, UInt64, UInt128)
@@ -353,6 +377,10 @@ end
                         @test promote_type(PiTimes{t2},PiExpTimes{2,t1}) === PiExpTimes{N,typejoin(t1,t2)} where N
                     end
                 end
+                @test promote_rule(PiExpTimes{2,Float64},PiTimes{Float64}) === PiExpTimes{N,Float64} where N
+                @test promote_type(PiExpTimes{2,Float64},PiTimes{Float64}) === PiExpTimes{N,Float64} where N
+                @test promote_rule(PiExpTimes{2},PiTimes) === PiExpTimes{N} where N
+                @test promote_type(PiExpTimes{2},PiTimes) === PiExpTimes{N} where N
             end
         end
 
@@ -464,6 +492,7 @@ end
                 @test convert(PiTimes,π) === Pi
             end
             @testset "Irrational to PiExpTimes" begin
+                @test convert(PiExpTimes,π) === Pi
                 @test convert(PiExpTimes{2},π) === PiExpTimes{2,PiExpTimes{-1,Int}}(Pi^-1)
                 @test convert(PiExpTimes{2,Float64},π) === PiExpTimes{2}(Float64(1/π))
             end
@@ -475,8 +504,8 @@ end
                         @test convert(PiTimes{t},2) == PiTimes{t}(2/π)
                         @test convert(PiTimes{t},2.0) === PiTimes{t}(2.0/π)
                     end
-                    convert(PiTimes{BigFloat},2) === PiTimes{BigFloat}(2/π)
-                    convert(PiTimes{BigFloat},2.0) === PiTimes{BigFloat}(2.0/π)
+                    @test convert(PiTimes{BigFloat},2) == PiTimes{BigFloat}(2/BigFloat(π))
+                    @test convert(PiTimes{BigFloat},2.0) == PiTimes{BigFloat}(2.0/BigFloat(π))
                 end
                 @testset "PiExpTimes" begin
                     @test convert(PiExpTimes{2},2) === PiExpTimes{2,PiExpTimes{-2,Int}}(2/Pi^2)
@@ -484,12 +513,24 @@ end
                         @test convert(PiExpTimes{2,t},2) === PiExpTimes{2}(t(2/Pi^2))
                         @test convert(PiExpTimes{2,t},2.0) === PiExpTimes{2}(t(2.0/Pi^2))
                     end
-                    convert(PiExpTimes{2,BigFloat},2) === PiExpTimes{2,BigFloat}(2/π^2)
-                    convert(PiExpTimes{2,BigFloat},2.0) === PiExpTimes{2,BigFloat}(2.0/π^2)
+                    @test convert(PiExpTimes{2,BigFloat},2) == PiExpTimes{2,BigFloat}(2/BigFloat(π)^2)
+                    @test convert(PiExpTimes{2,BigFloat},2.0) == PiExpTimes{2,BigFloat}(2.0/BigFloat(π)^2)
+
+                    @test convert(PiExpTimes{0},3) === 3
+                    @test convert(PiExpTimes{0},3.5) === 3.5
                 end
             end
         end
         @testset "PiExpTimes to PiExpTimes" begin
+            @testset "PiTimes to PiExpTimes" begin
+                @test convert(PiExpTimes,Pi) === Pi
+                @test convert(PiExpTimes,Pi^2) === Pi^2
+                p = PiTimes{PiTimes}(3)
+                @test convert(PiExpTimes,p) === p
+            end
+            @testset "PiTimes to PiExpTimes{N}" begin
+                @test convert(PiExpTimes{<:Any,Float64},Pi) === PiTimes{Float64}(1)
+            end
             @testset "PiTimes to PiTimes" begin
                 for t in (Int8, Int16, Int32, Int64, Int128, Bool, UInt8, UInt16, UInt32, UInt64, UInt128)
                     @test convert(PiTimes{Float16},PiTimes{t}(0)) === PiTimes(Float16(0))
@@ -516,6 +557,8 @@ end
             @testset "conversion retaining type" begin
                 @test convert(PiExpTimes{2},Pi) isa PiExpTimes{2,PiExpTimes{-1,Int}}
                 @test convert(PiExpTimes{2},Pi) * Pi^-2 * Pi === 1.0
+
+                @test convert(PiExpTimes{0},Pi) === Pi
             end
             @testset "nested" begin
                 # Go crazy
@@ -1325,5 +1368,11 @@ end
             show(io,Pi*Pi*(2//3)*im)
             @test String(take!(io)) == "0//1 + (2//3)Pi^2*im"
         end
-    end    
+    end
+
+    @testset "errors" begin
+        msg = sprint(showerror,MultiplesOfPi.IncompatibleTypesError())
+        msgexp = "Incompatible types, try converting to a floating-point type or to Real"
+        @test msg == msgexp
+    end  
 end

@@ -23,17 +23,10 @@ struct PiExpTimes{N,T<:Real} <: AbstractIrrational
 		@assert N isa Integer
 		new{N,T}(x)
 	end
-	function PiExpTimes{N,Real}(x::T) where {N,T<:Real}
-		@assert N isa Integer
-		new{N,Real}(x)
-	end
+	# This is needed to avoid recursion
 	function PiExpTimes{N,PiExpTimes{M,T}}(p::PiExpTimes{M,T}) where {N,M,T<:Real}
 		@assert N isa Integer
 		new{N,PiExpTimes{M,T}}(p)
-	end
-	function PiExpTimes{N,Real}(p::PiExpTimes{M,T}) where {N,M,T<:Real}
-		@assert N isa Integer
-		new{N,Real}(p)
 	end
 end
 
@@ -56,11 +49,6 @@ function PiExpTimes{0,PiExpTimes{M,T}}(p::PiExpTimes{M}) where {M,T<:Real}
 end
 
 PiExpTimes{N}(p::PiExpTimes{M}) where {N,M} = PiExpTimes{N+M}(p.x)
-
-function PiExpTimes{N,T}(p::PiExpTimes{M}) where {N,M,T<:Real}
-	PiExpTimes{N+M}(convert(T,p.x))
-end
-PiExpTimes{N,T}(p::PiExpTimes{N,T}) where {N,T<:Real} = PiExpTimes{2N}(p.x)
 
 function PiExpTimes{N,PiExpTimes{M,T}}(p::PiExpTimes{M,R}) where {N,M,T<:Real,R<:Real}
 	p_new = convert(PiExpTimes{M,T},p)
@@ -108,6 +96,9 @@ julia> sin(pi)
 """
 const Pi = PiTimes(1)
 
+exponentof(::PiExpTimes{N}) where {N} = N
+exponentof(::Real) = 0
+
 # Helper functions to get rid of nesting
 netexponent(p::PiExpTimes{N,T}) where {N,T<:Real} = N + netexponent(T,p.x)::Int
 netexponent(p::Real) = 0
@@ -137,7 +128,7 @@ Pi^3
 ```
 """
 simplify(x) = x
-function simplify(p::PiExpTimes{M,<:Real}) where {M}
+function simplify(p::PiExpTimes{<:Any,<:PiExpTimes})
 	T = rootvaltype(p)
 	N = netexponent(p)
 	x = rootval(p)
@@ -158,8 +149,9 @@ Base.:(<)(p::PiTimes,::Irrational{:π}) = p.x < one(p.x)
 Base.:(<)(::Irrational{:π},p::PiTimes) = p.x > one(p.x)
 
 Base.:(==)(p::PiExpTimes{N},q::PiExpTimes{N}) where {N} = p.x == q.x
+
 function Base.:(==)(p::PiExpTimes,q::PiExpTimes)
-	iszero(p.x) && iszero(q.x) ? true : 
+	iszero(p.x) && iszero(q.x) ? true :
 	float(p) == float(q)
 end
 Base.:(==)(p::PiExpTimes{<:Any,<:PiExpTimes},q::PiExpTimes) = simplify(p) == q
@@ -191,7 +183,6 @@ for T in (:Float64,:Float32,:Float16)
 				return $T(p.x*inv(float(π))^-N)
 			end
 		end
-		Base.$T(p::PiExpTimes{0}) = $T(p.x)
 		function Base.$T(p::PiTimes)
 			if isone(p.x)
 				return $T(π)
@@ -211,7 +202,6 @@ function Base.BigFloat(p::PiExpTimes{N}) where {N}
 		return BigFloat(p.x)*inv(BigFloat(π))^-N
 	end
 end
-Base.BigFloat(p::PiExpTimes{0}) = BigFloat(p.x)
 function Base.BigFloat(p::PiTimes)
 	if isone(p.x)
 		return BigFloat(π)
@@ -270,13 +260,11 @@ function Base.:(+)(p1::PiExpTimes{M},p2::PiExpTimes{N}) where {M,N}
 	p2conv = convert(PiExpTimes{min(M,N)},p2)
 	PiExpTimes{min(M,N)}(p1conv.x + p2conv.x)
 end
-Base.:(+)(p1::PiExpTimes{0},p2::PiExpTimes{0}) = p1.x + p2.x
 
 Base.:(+)(p::PiTimes,::Irrational{:π}) = PiTimes(p.x + one(p.x))
 Base.:(+)(::Irrational{:π},p::PiTimes) = PiTimes(p.x + one(p.x))
 
 Base.:(-)(p::PiExpTimes{N}) where {N} = PiExpTimes{N}(-p.x)
-Base.:(-)(p::PiExpTimes{0}) = -p.x
 
 Base.:(-)(p1::PiExpTimes{N},p2::PiExpTimes{N}) where {N} = PiExpTimes{N}(p1.x-p2.x)
 function Base.:(-)(p1::PiExpTimes{M},p2::PiExpTimes{N}) where {M,N}
@@ -284,7 +272,6 @@ function Base.:(-)(p1::PiExpTimes{M},p2::PiExpTimes{N}) where {M,N}
 	p2conv = convert(PiExpTimes{min(M,N)},p2)
 	PiExpTimes{min(M,N)}(p1conv.x - p2conv.x)
 end
-Base.:(-)(p1::PiExpTimes{0},p2::PiExpTimes{0}) = p1.x-p2.x
 
 Base.:(-)(p::PiTimes,::Irrational{:π}) = PiTimes(p.x - one(p.x))
 Base.:(-)(::Irrational{:π},p::PiTimes) = PiTimes(one(p.x) - p.x)
@@ -481,9 +468,8 @@ end
 # Irrational{π} to PiExpTimes
 
 # Infer the type and set exponent to 1
-function Base.convert(::Type{PiExpTimes},::Irrational{:π}) where {N}
-	convert(PiExpTimes{1},Pi)
-end
+Base.convert(::Type{PiExpTimes},::Irrational{:π}) = Pi
+
 # General case that infers the type
 function Base.convert(::Type{PiExpTimes{N}},::Irrational{:π}) where {N}
 	convert(PiExpTimes{N},Pi)
