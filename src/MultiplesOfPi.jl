@@ -473,7 +473,7 @@ function Base.convert(::Type{PiExpTimes{N}},x::T) where {N,T<:Real}
 	PiExpTimes{N,PiExpTimes{-N,T}}(p_new)
 end
 
-# Irrational{π} to PiExpTimes or PiTimes
+# Irrational{π} to PiExpTimes
 
 # Infer the type and set exponent to 1
 function Base.convert(::Type{PiExpTimes},::Irrational{:π}) where {N}
@@ -494,21 +494,15 @@ end
 # Conversion from PiExpTimes to PiExpTimes
 # General case without types specified, will be inferred
 # Safe to run this as there won't be an error
-function Base.convert(::Type{PiExpTimes},p::PiExpTimes{M,T}) where {M,T<:Real}
-	p
-end
-function Base.convert(::Type{<:PiExpTimes{<:Any,R}},p::PiExpTimes{M,T}) where {M,T<:Real,R<:Real}
+Base.convert(::Type{PiExpTimes},p::PiExpTimes) = p
+
+function Base.convert(::Type{PiExpTimes{<:Any,R}},p::PiExpTimes{M,T}) where {M,T<:Real,R<:Real}
 	PiExpTimes{M,R}(convert(R,p.x))
 end
 function Base.convert(::Type{PiExpTimes{N}},p::PiExpTimes{M,T}) where {M,N,T<:Real}
-	# eg. convert(PiExpTimes{2},Pi)
+	# eg. convert(PiExpTimes{2},Pi) == Pi^-1*Pi^2
 	p_new = PiExpTimes{M-N,T}(p.x)
 	PiExpTimes{N,PiExpTimes{M-N,T}}(p_new)
-end
-function Base.convert(::Type{PiTimes},p::PiExpTimes{M,T}) where {M,T<:Real}
-	# eg. convert(PiExpTimes{2},Pi)
-	p_new = PiExpTimes{M-1,T}(p.x)
-	PiTimes{PiExpTimes{M-1,T}}(p_new)
 end
 
 # General case with type and exponent conversion
@@ -539,40 +533,6 @@ function Base.convert(::Type{PiExpTimes{N,PiExpTimes{M,R}}},
 	# eg. convert(PiExpTimes{2,PiExpTimes{2,Int}},Pi^4) == Pi^2*Pi^2
 	p_new = convert(PiExpTimes{M,R},PiExpTimes{Q-N,T}(p.x))
 	PiExpTimes{N,PiExpTimes{M,R}}(p_new)
-end
-# Special case
-function Base.convert(::Type{PiTimes{PiExpTimes{M,R}}},
-	p::PiExpTimes{Q,T}) where {M,Q,T<:Real,R<:Real}
-	
-	# eg. convert(PiTimes{PiExpTimes{3,Float64}},Pi^3) == Float64(1/Pi)*Pi^3*Pi
-	p_new = convert(PiExpTimes{M,R},PiExpTimes{Q-1,T}(p.x))
-	PiTimes{PiExpTimes{M,R}}(p_new)
-end
-# Even more special case
-function Base.convert(::Type{PiTimes{PiExpTimes{M,R}}},
-	p::PiTimes) where {M,R<:Real}
-	
-	# eg. convert(PiTimes{PiExpTimes{2,Float64}},Pi) == Float64(1/Pi^2)*Pi^2*Pi
-
-	p_new = convert(PiExpTimes{M,R},p.x)
-	PiTimes{PiExpTimes{M,R}}(p_new)
-end
-function Base.convert(::Type{PiTimes{PiExpTimes{M,R}}},
-	p::PiTimes{PiExpTimes{M,R}}) where {M,R<:Real} 
-	p
-end
-
-# Conversions to PiTimes
-Base.convert(::Type{PiTimes},p::PiTimes) = p
-Base.convert(::Type{PiTimes{T}},p::PiTimes{T}) where {T<:Real} = p
-
-function Base.convert(::Type{PiTimes{T}},p::PiTimes{R}) where {T<:Real,R<:Real}
-	PiTimes{T}(convert(T,p.x))
-end
-
-function Base.convert(::Type{PiTimes{T}},p::PiExpTimes{N,R}) where {N,T<:Real,R<:Real}
-	# eg. convert(PiTimes{Float64},Pi^2) = Float64(Pi)*Pi
-	PiTimes{T}(convert(T,PiExpTimes{N-1,R}(p.x)))
 end
 
 # Pretty-printing
