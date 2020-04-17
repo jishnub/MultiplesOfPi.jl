@@ -96,9 +96,6 @@ julia> sin(pi)
 """
 const Pi = PiTimes(1)
 
-exponentof(::PiExpTimes{N}) where {N} = N
-exponentof(::Real) = 0
-
 # Helper functions to get rid of nesting
 netexponent(p::PiExpTimes{N,T}) where {N,T<:Real} = N + netexponent(T,p.x)::Int
 netexponent(p::Real) = 0
