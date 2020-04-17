@@ -15,6 +15,30 @@ import MultiplesOfPi: IncompatibleTypesError
 
         @test PiTimes(pi) === PiTimes(PiTimes(1))
         @test PiTimes(PiTimes(pi)) === PiTimes(PiTimes(PiTimes(1)))
+
+        @testset "PiTimes{Real}" begin
+            @test PiTimes{Real}(1) isa PiTimes{Real}
+            @test PiTimes{Real}(1).x isa Int
+            @test PiTimes{Real}(1).x === 1
+
+            @test PiTimes{Real}(Pi) isa PiTimes{Real}
+            @test PiTimes{Real}(Pi).x isa PiTimes{Int}
+            @test PiTimes{Real}(Pi).x === Pi
+        end
+
+        @testset "neseted PiExpTimes{0}" begin
+            @test PiTimes{PiExpTimes{0,Int}}(3) === PiTimes(3)
+            @test PiTimes{PiExpTimes{0,Float64}}(3) === PiTimes{Float64}(3)
+        end
+
+        @testset "Irrational{:π}" begin
+            @test PiTimes(π) === PiExpTimes{2,Int}(1)
+            @test PiTimes{Irrational{:π}}(π) isa PiTimes{Irrational{:π}}
+            @test PiTimes{Irrational{:π}}(π).x === π
+
+            @test PiTimes{Real}(π) isa PiTimes{Real}
+            @test PiTimes{Real}(π).x === π
+        end
     end
 
     @testset "PiExpTimes" begin
@@ -59,6 +83,32 @@ import MultiplesOfPi: IncompatibleTypesError
             @test PiExpTimes{0}(Pi) === Pi
             @test float(PiExpTimes{0,Float64}(3.0)) === 3.0
             @test float(PiExpTimes{0,Int}(3)) === 3.0
+
+            @test PiExpTimes{2,PiExpTimes{0,Int}}(3) === PiExpTimes{2,Int}(3)
+            @test PiExpTimes{2,PiExpTimes{0,Float64}}(3) === PiExpTimes{2,Float64}(3)
+
+            @test PiExpTimes{0,PiTimes}(Pi) === Pi
+            @test PiExpTimes{0,PiTimes{Int}}(Pi) === Pi
+            @test PiExpTimes{0,PiTimes{Float64}}(Pi) === PiTimes{Float64}(1)
+        end
+
+        @testset "PiExpTimes{2,Real}" begin
+            @test PiExpTimes{2,Real}(1) isa PiExpTimes{2,Real}
+            @test PiExpTimes{2,Real}(1).x isa Int
+            @test PiExpTimes{2,Real}(1).x === 1
+
+            @test PiExpTimes{2,Real}(Pi) isa PiExpTimes{2,Real}
+            @test PiExpTimes{2,Real}(Pi).x isa PiTimes{Int}
+            @test PiExpTimes{2,Real}(Pi).x === Pi
+        end
+
+        @testset "Irrational{:π}" begin
+            @test PiExpTimes{2}(π) === PiExpTimes{3,Int}(1)
+            @test PiExpTimes{2,Irrational{:π}}(π) isa PiExpTimes{2,Irrational{:π}}
+            @test PiExpTimes{2,Irrational{:π}}(π).x === π
+
+            @test PiExpTimes{2,Real}(π) isa PiExpTimes{2,Real}
+            @test PiExpTimes{2,Real}(π).x === π
         end
     end
 end
@@ -86,9 +136,14 @@ end
     end
     @testset "rootvaltype" begin
         @test MultiplesOfPi.rootvaltype(Pi) === Int
+        @test MultiplesOfPi.rootvaltype(PiTimes{Int}) === Int
         @test MultiplesOfPi.rootvaltype(Pi^2) === Int
+        @test MultiplesOfPi.rootvaltype(PiExpTimes{2,Int}) === Int
         @test MultiplesOfPi.rootvaltype(2.0Pi^2) === Float64
         @test MultiplesOfPi.rootvaltype(PiTimes{PiExpTimes{2,Float64}}(1.0Pi^2)) === Float64
+
+        p = convert(PiTimes{PiExpTimes{-1,Real}}, π)
+        @test MultiplesOfPi.rootvaltype(p) === Real
     end
     @testset "simplify" begin
         @test MultiplesOfPi.simplify(PiTimes{PiExpTimes{2,Float64}}(1.0Pi^2)) === 1.0Pi^3
@@ -285,17 +340,17 @@ end
             end
             @testset "PiExpTimes{2} and PiTimes" begin
                 for t in (Int8, Int16, Int32, Int64, Int128, Bool, UInt8, UInt16, UInt32, UInt64, UInt128)
-                        @test promote_rule(PiExpTimes{2,Float16},PiTimes{t}) === PiTimes{promote_type(Float16,t)}
-                        @test promote_rule(PiTimes{t},PiExpTimes{2,Float16}) === PiTimes{promote_type(Float16,t)}
-                        @test promote_type(PiExpTimes{2,Float16},PiTimes{t}) === PiTimes{promote_type(Float16,t)}
-                        @test promote_type(PiTimes{t},PiExpTimes{2,Float16}) === PiTimes{promote_type(Float16,t)}
+                        @test promote_rule(PiExpTimes{2,Float16},PiTimes{t}) === PiExpTimes{N,typejoin(Float16,t)} where N
+                        @test promote_rule(PiTimes{t},PiExpTimes{2,Float16}) === PiExpTimes{N,typejoin(Float16,t)} where N
+                        @test promote_type(PiExpTimes{2,Float16},PiTimes{t}) === PiExpTimes{N,typejoin(Float16,t)} where N
+                        @test promote_type(PiTimes{t},PiExpTimes{2,Float16}) === PiExpTimes{N,typejoin(Float16,t)} where N
                 end
                 for t1 in (Float32, Float64)
                     for t2 in (Int8, Int16, Int32, Int64, Bool, UInt8, UInt16, UInt32, UInt64)
-                        @test promote_rule(PiExpTimes{2,t1},PiTimes{t2}) === PiTimes{promote_type(t1,t2)}
-                        @test promote_rule(PiTimes{t2},PiExpTimes{2,t1}) === PiTimes{promote_type(t1,t2)}
-                        @test promote_type(PiTimes{t2},PiExpTimes{2,t1}) === PiTimes{promote_type(t1,t2)}
-                        @test promote_type(PiTimes{t2},PiExpTimes{2,t1}) === PiTimes{promote_type(t1,t2)}
+                        @test promote_rule(PiExpTimes{2,t1},PiTimes{t2}) === PiExpTimes{N,typejoin(t1,t2)} where N
+                        @test promote_rule(PiTimes{t2},PiExpTimes{2,t1}) === PiExpTimes{N,typejoin(t1,t2)} where N
+                        @test promote_type(PiTimes{t2},PiExpTimes{2,t1}) === PiExpTimes{N,typejoin(t1,t2)} where N
+                        @test promote_type(PiTimes{t2},PiExpTimes{2,t1}) === PiExpTimes{N,typejoin(t1,t2)} where N
                     end
                 end
             end
@@ -345,6 +400,15 @@ end
                 @test promote_type(Irrational{:π},Complex{PiExpTimes{2,Float64}}) === Complex{Float64}
             end
         end
+    end
+    @testset "promote" begin
+        @test promote(Pi,Pi) === (Pi,Pi)
+        @test promote(Pi^2,Pi^2) === (Pi^2,Pi^2)
+        @test promote(Pi^2,1.0Pi^2) === (1.0Pi^2,1.0Pi^2)
+        t = promote(Pi,Pi^2)
+        @test t isa Tuple{PiTimes{Real},PiTimes{Real}}
+        @test t[1].x === 1
+        @test t[2].x === Pi
     end
     @testset "convert" begin
         @testset "PiExpTimes to float" begin
@@ -456,7 +520,9 @@ end
         @testset "Complex" begin
             @test Complex(Pi,Pi) === Pi + im*Pi
             @test Complex(Pi^2,Pi^2) === Pi^2 + im*Pi^2
-            @test Complex(Pi^2,Pi) === float(π)*Pi + im*Pi
+            @test Complex(Pi^2,Pi) isa Complex{PiExpTimes{1,Real}}
+            @test Complex(Pi^2,Pi).re.x === PiTimes{Int}(1)
+            @test Complex(Pi^2,Pi).im.x === 1
             @test Complex(Pi,π) === Pi + im*Pi
             @test Complex(π,Pi) === Pi + im*Pi
         end

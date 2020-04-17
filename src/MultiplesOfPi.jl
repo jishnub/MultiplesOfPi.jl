@@ -75,7 +75,6 @@ function PiExpTimes{N,PiExpTimes{0,T}}(p::PiExpTimes{M,R}) where {N,M,T<:Real,R<
 end
 
 PiExpTimes{N}(::Irrational{:π}) where {N} = PiExpTimes{N+1}(1)
-PiExpTimes{N,Irrational{:π}}(::Irrational{:π}) where {N} = PiExpTimes{N+1}(1)
 
 """
 	PiTimes(x)
@@ -392,11 +391,14 @@ end
 function Base.promote_rule(::Type{<:PiExpTimes{N}},::Type{<:PiExpTimes{N}}) where {N}
 	PiExpTimes{N}
 end
-function Base.promote_rule(::Type{PiExpTimes{M,R}},::Type{PiExpTimes{N,S}}) where {M,N,R<:Real,S<:Real}
-	PiExpTimes{min(M,N),float(promote_type(R,S))}
+function Base.promote_rule(::Type{PiExpTimes{M1,R}},::Type{PiExpTimes{M2,R}}) where {M1,M2,R<:Real}
+	PiExpTimes{N,R} where N
 end
-function Base.promote_rule(::Type{<:PiExpTimes{M}},::Type{<:PiExpTimes{N}}) where {M,N}
-	PiExpTimes{min(M,N)}
+function Base.promote_rule(::Type{PiExpTimes{M1,R}},::Type{PiExpTimes{M2,S}}) where {M1,M2,R<:Real,S<:Real}
+	PiExpTimes{N,typejoin(R,S)} where N
+end
+function Base.promote_rule(::Type{<:PiExpTimes{M1}},::Type{<:PiExpTimes{M2}}) where {M1,M2}
+	PiExpTimes{N} where N
 end
 
 Base.promote_rule(::Type{PiTimes{T}}, ::Type{Irrational{:π}}) where {T} = PiTimes{T}
@@ -408,6 +410,20 @@ end
 function Base.promote_rule(::Type{Irrational{:π}}, ::Type{Complex{PiTimes{T}}}) where {T}
 	Complex{PiTimes{T}}
 end
+
+function Base.promote(p::PiExpTimes{N,T},
+	q::PiExpTimes{M,R}) where {M,N,R<:Real,T<:Real}
+
+	U = PiExpTimes{min(M,N),Real}
+	convert(U,p), convert(U,q)
+end
+function Base.promote(p::PiExpTimes{N,T},
+	q::PiExpTimes{N,R}) where {N,R<:Real,T<:Real}
+
+	U = PiExpTimes{N,promote_type(R,T)}
+	convert(U,p), convert(U,q)
+end
+Base.promote(p::T,q::T) where {T<:PiExpTimes} = (p,q)
 
 # Conversions
 
@@ -423,7 +439,7 @@ end
 
 # Real to PiExpTimes
 
-# # PiExpTimes{0} is a special case, equivalent to identity
+# PiExpTimes{0} is a special case, equivalent to identity
 Base.convert(::Type{<:PiExpTimes{0}},x::Real) = x
 Base.convert(::Type{PiExpTimes{0,T}},x::Real) where {T<:Real} = convert(T,x)
 
@@ -469,12 +485,15 @@ end
 
 # Irrational{π} to PiExpTimes or PiTimes
 
+# Infer the type and set exponent to 1
+function Base.convert(::Type{PiExpTimes},::Irrational{:π}) where {N}
+	convert(PiExpTimes{1},Pi)
+end
 # General case that infers the type
 function Base.convert(::Type{<:PiExpTimes{N}},::Irrational{:π}) where {N}
 	convert(PiExpTimes{N},Pi)
 end
 
-# Special case, convert to bits types
 function Base.convert(::Type{PiExpTimes{N,T}},::Irrational{:π}) where {N,T<:Real}
 	# eg. convert(PiExpTimes{2,Float64},π) == Float64(1/π)*Pi^2
 	# eg. convert(PiExpTimes{2,Real},π) == Pi^-1*Pi^2
@@ -511,6 +530,12 @@ end
 # Conversion from PiExpTimes to PiExpTimes
 # General case without types specified, will be inferred
 # Safe to run this as there won't be an error
+function Base.convert(::Type{PiExpTimes},p::PiExpTimes{M,T}) where {M,T<:Real}
+	p
+end
+function Base.convert(::Type{<:PiExpTimes{<:Any,R}},p::PiExpTimes{M,T}) where {M,T<:Real,R<:Real}
+	PiExpTimes{M,R}(convert(R,p.x))
+end
 function Base.convert(::Type{<:PiExpTimes{N}},p::PiExpTimes{M,T}) where {M,N,T<:Real}
 	# eg. convert(PiExpTimes{2},Pi)
 	p_new = PiExpTimes{M-N,T}(p.x)

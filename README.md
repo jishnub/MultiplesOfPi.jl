@@ -3,7 +3,6 @@
 [![Build Status](https://travis-ci.com/jishnub/MultiplesOfPi.jl.svg?branch=master)](https://travis-ci.com/jishnub/MultiplesOfPi.jl)
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/jishnub/MultiplesOfPi.jl?svg=true)](https://ci.appveyor.com/project/jishnub/MultiplesOfPi-jl)
 [![Codecov](https://codecov.io/gh/jishnub/MultiplesOfPi.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/jishnub/MultiplesOfPi.jl)
-[![Coveralls](https://coveralls.io/repos/github/jishnub/MultiplesOfPi.jl/badge.svg?branch=master)](https://coveralls.io/github/jishnub/MultiplesOfPi.jl?branch=master)
 
 # Introduction
 
@@ -20,7 +19,7 @@ It's usually possible, and cleaner, to express mathematical relations in terms o
 
 The number `π` is represented as an `Irrational` type in julia, and may be computed to an arbitrary degree of precision. In normal course of events it is converted to a float when it encounters another number, for example `2π` is computed by converting both `2` and `π` to floats and subsequently carrying out a floating-point multiplication. This is lossy, as both `2` and `π` may be represented with arbitrary precision. This package delays the conversion of the `π` to a float, treating it as a common factor in algebraic simplifications. This limits floating-point inaccuracies, especially if the terms multiplying `π` are exactly representable in binary. As an added advantage, it uses `sinpi` and `cospi` wherever possible to avoid having to convert `π` to a float altogether.
 
-# Examples
+# Features
 
 ## Arithmetic
 
@@ -114,6 +113,25 @@ julia> cosh(im*Pi/2)
 0.0 + 0.0im
 ```
 
+## Algebra
+
+We may convert between types having different exponents without losing accuracy.
+
+```julia
+julia> convert(PiExpTimes{3},Pi)
+Pi^-2*Pi^3
+
+julia> convert(PiExpTimes{3},Pi) == Pi
+true
+```
+
+Such an expression may be reduced to a simple form using `simplify`.
+
+```julia
+julia> convert(PiExpTimes{3},Pi) |> simplify
+Pi
+```
+
 ## Look out
 
 ### Type-instability
@@ -125,32 +143,84 @@ The type `PiExpTimes{N}` stores the exponent as a type-parameter, therefore expo
 `PiExpTimes{N}` is promoted to float as soon as it encounters a number other than another `PiExpTimes{N}` in additions and subtractions.
 
 ```julia
-julia> Pi^2 + Pi
-13.011197054679151
+julia> Pi + 3Pi
+4Pi
+
+julia> Pi + 3Pi^2
+32.75040585685787
 ```
 
-Arrays of mixed types will involve conversion to the lowest exponent, unless a specific type is specified.
+### Conversion vs construction
+
+Constructors for `PiExpTimes` act as a wrapper and not as a conversion. Conversion to the type retains the value of a number, whereas construction implies multiplication by an exponent of `Pi`.
 
 ```julia
-julia> [Pi,Pi^2]
-2-element Array{PiExpTimes{1,Float64},1}:
-                   Pi
- 3.141592653589793*Pi
- 
-julia> PiExpTimes[Pi,Pi^2] # this preserves the type of each element, but is not a concrete type
-2-element Array{PiExpTimes,1}:
+julia> PiTimes(1)
+Pi
+
+julia> convert(PiTimes,1)
+Pi^-1*Pi
+```
+
+### Promotion of mixed types
+
+`promote` and `promote_type` work differently with types having different exponents. `promote` converts both to the same type which has the minimum exponent, whereas `promote_type` leaves the exponent as a free parameter.
+
+```julia
+julia> promote(Pi,Pi^2) |> typeof
+Tuple{PiExpTimes{1,Real},PiExpTimes{1,Real}}
+
+julia> promote_type(typeof(Pi),typeof(Pi^2))
+PiExpTimes{N,Int64} where N
+```
+
+This is so that structs of `PiTimes` do not lose accuracy in conversion. 
+
+#### Arrays of mixed types
+
+Storing different exponents of `Pi` in an array will in general lead to conversion to a supertype that can store all the values.
+
+```julia
+julia> [Pi,Pi^2] # element type is not concrete
+2-element Array{PiExpTimes{N,Int64} where N,1}:
    Pi
  Pi^2
- 
-julia> PiExpTimes{2}[Pi,Pi^2] # Not a concrete type, but preserves the type of Pi^2 while converting Pi
-2-element Array{PiExpTimes{2,T} where T<:Real,1}:
- 0.3183098861837907*Pi^2
-                    Pi^2
-                    
-julia> PiExpTimes{2,Float64}[Pi,Pi^2] # Concrete type
+```
+
+Such an array will not be the most performant, as the element type is not concrete. This may be avoided by specifying a type while creating the array. A concrete type will not be able to store all the numbers losslessly.
+
+```julia
+julia> PiExpTimes{2,Real}[Pi,Pi^2] # exponent is fixed but Real is not a concrete type
+2-element Array{PiExpTimes{2,Real},1}:
+ Pi^-1*Pi^2
+       Pi^2
+
+julia> PiExpTimes{2,Float64}[Pi,Pi^2] # eltype is concrete, but result loses accuracy
 2-element Array{PiExpTimes{2,Float64},1}:
  0.3183098861837907*Pi^2
                     Pi^2
+```
+
+#### Complex numbers
+
+Complex numbers rely on `promote` to generate the element type
+
+```julia
+julia> Complex(Pi,Pi^2)
+Pi + Pi*Pi*im
+
+julia> Complex(Pi,Pi^2) |> typeof
+Complex{PiExpTimes{1,Real}}
+```
+
+In this case converting either the real or imaginary part to a floating-point type would have resulted in a loss of accuracy. Such a type might not be performant, so if a conversion is desired then it might be enforced by specifying the element type while constructing the `Complex` struct:
+
+```julia
+julia> Complex{PiTimes{Float64}}(Pi,Pi^2)
+Pi + 3.141592653589793*Pi*im
+
+julia> Complex{PiTimes{Float64}}(Pi,Pi^2) |> typeof
+Complex{PiExpTimes{1,Float64}}
 ```
 
 # Installation
