@@ -3,7 +3,6 @@ module MultiplesOfPi
 export PiExpTimes
 export PiTimes
 export Pi
-export simplify
 
 """
 	PiExpTimes{n}(x)
@@ -352,6 +351,12 @@ Base.:(*)(p::PiExpTimes,::Irrational{:π}) = PiTimes(p)
 # Not type-stable!
 Base.:(^)(p::PiExpTimes{N},n::Integer) where {N} = PiExpTimes{N*n}(p.x^n)
 
+Base.literal_pow(::typeof(^), p::PiExpTimes, ::Val{0}) = one(p.x)
+Base.literal_pow(::typeof(^), p::PiExpTimes, ::Val{1}) = p
+for i=2:5
+	@eval Base.literal_pow(::typeof(^), p::PiExpTimes{N}, ::Val{$i}) where {N} = PiExpTimes{$i*N}(p.x^$i)
+end
+
 for op in Symbol[:/,:*]
 	@eval Base.$op(p::PiExpTimes,x::AbstractIrrational) = $op(Float64(p),Float64(x))
 	@eval Base.$op(x::AbstractIrrational,p::PiExpTimes) = $op(Float64(x),Float64(p))
@@ -507,17 +512,18 @@ end
 
 # General case with type and exponent conversion
 function Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{M,R}) where {M,N,T<:Real,R<:Real}
-	# eg. convert(PiExpTimes{2,Int},Pi)
-	# This should fail as the result is Pi^-1*Pi^2 and Pi^-1 is not an Int
+	# eg. convert(PiExpTimes{2,Real},Pi) = Pi^-1*Pi^2
+	# eg. convert(PiExpTimes{2,Float64},Pi) = Float64(Pi^-1)*Pi^2
+	# eg. convert(PiExpTimes{2,Int},Pi) = Int(Pi^-1)*Pi^2 => error
+	# This fails as Pi^-1 is not an Int
 	
 	p_new = PiExpTimes{M-N}(p.x)
 	PiExpTimes{N,T}(convert(T,p_new))
 end
 
-# Special cases with same exponent
+# Special cases with identical exponents
 Base.convert(::Type{PiExpTimes{N}},p::PiExpTimes{N}) where {N} = p
 Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,T}) where {N,T<:Real} = p
-Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,T}) where {N,T<:PiExpTimes{M,<:Real} where M} = p
 
 function Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,R}) where {N,T<:Real,R<:Real}
 	# Error checks

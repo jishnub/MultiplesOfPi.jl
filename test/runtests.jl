@@ -1,6 +1,6 @@
 using MultiplesOfPi
 using Test
-import MultiplesOfPi: IncompatibleTypesError
+import MultiplesOfPi: IncompatibleTypesError, simplify
 
 @testset "Constructor" begin
     @testset "PiTimes" begin
@@ -939,7 +939,8 @@ end
             @test Pi^-2 === 1/Pi^2 === PiExpTimes{-2}(1.0) ≈ 1/π^2
 
             for n=1:10
-                @test Pi^-n == 1/Pi^n
+                @test Pi^n ≈ π^n
+                @test Pi^-n == 1/Pi^n ≈ float(π)^-n
                 @test float(Pi^-n) === float(1/Pi^n) ≈ 1/π^n
             end
 
@@ -963,6 +964,15 @@ end
             @test Pi^-1 * Pi === 1.0
             @test 2Pi * Pi^-1 === 2.0
             @test 2Pi^2 * Pi^-2 === 2.0
+        end
+
+        @testset "literal_pow" begin
+            @test Base.literal_pow(^,Pi,Val(1)) === Pi
+            @test Base.literal_pow(^,Pi,Val(2)) === PiExpTimes{2}(1)
+            @test Base.literal_pow(^,Pi,Val(-1)) === PiExpTimes{-1}(1.0)
+            @test Base.literal_pow(^,Pi,Val(0)) === 1
+            @test Base.literal_pow(^,Pi,Val(0)) === 1
+            @test Base.literal_pow(^,PiTimes{PiTimes}(Pi),Val(0)) === true
         end
     end
 

@@ -13,7 +13,7 @@ julia> Pi^2 == π^2
 true
 ```
 
-It's usually possible, and cleaner, to express mathematical relations in terms of `Pi` instead of the more cumbersome `PiExpTimes`, and is recommended unless it's specifically necessary to do so.
+Expressing mathematical relations in terms of `Pi` instead of the more cumbersome `PiExpTimes` is usually cleaner, and is recommended unless it's specifically necessary to do otherwise. One such scenario is exponentiation, more on which is presented below.
 
 ## Rationale
 
@@ -128,7 +128,7 @@ true
 Such an expression may be reduced to a simple form using `simplify`.
 
 ```julia
-julia> convert(PiExpTimes{3},Pi) |> simplify
+julia> convert(PiExpTimes{3},Pi) |> MultiplesOfPi.simplify
 Pi
 ```
 
@@ -136,7 +136,37 @@ Pi
 
 ### Type-instability
 
-The type `PiExpTimes{N}` stores the exponent as a type-parameter, therefore exponentiation is not type-stable in general. 
+The type `PiExpTimes{N}` stores the exponent as a type-parameter, therefore exponentiation is not type-stable in general.
+
+### Constructor-abuse to avoid nesting
+
+`PiExpTimes{N}(PiExpTimes{M})` is automatically simplified to `PiExpTimes{N+M}`. This is an abuse of Julia's constructors as the type of the object changes, however this avoids nested expressions that have performance issues.
+
+```julia
+julia> PiExpTimes{2}(PiExpTimes{3}(4))
+4Pi^5
+
+julia> PiExpTimes{2}(PiExpTimes{3}(4)) |> typeof
+PiExpTimes{5,Int64}
+```
+
+### Interactions with π
+
+The irrational number `π` is usually aggressively converted to `PiTimes(1)`, eg:
+
+```julia
+julia> PiTimes(π)
+Pi^2
+```
+
+This ensures that subsequent calculation would not get promoted to a floating-point type. However if this behavior is not desired then one may specify the type explicitly while constructing the object as 
+
+```julia
+julia> PiTimes{Irrational{:π}}(π)
+π = 3.1415926535897...*Pi
+```
+
+However, it is not possible to convert a number to the type `PiTimes{Irrational{:π}}`.
 
 ### Floating-point promotion
 
@@ -151,6 +181,13 @@ julia> Pi + 3Pi^2
 ```
 
 This fits with the intuition the expression being factorized as `Pi + 3Pi^2 == Pi*(1 + 3Pi)`.
+
+Note that `π` is promoted to `Pi` in such operations, so we obtain 
+
+```julia
+julia> Pi + π
+2Pi
+```
 
 ### Conversion vs construction
 
