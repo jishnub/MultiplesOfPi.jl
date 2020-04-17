@@ -189,7 +189,7 @@ for T in (:Float64,:Float32,:Float16)
 			if N > 0
 				return $T(p.x*π^N)
 			else
-				return $T(p.x*inv(π)^-N)
+				return $T(p.x*inv(float(π))^-N)
 			end
 		end
 		Base.$T(p::PiExpTimes{0}) = $T(p.x)
@@ -414,10 +414,14 @@ end
 Base.promote_rule(::Type{PiTimes{T}}, ::Type{Irrational{:π}}) where {T} = PiTimes{T}
 Base.promote_rule(::Type{Irrational{:π}}, ::Type{PiTimes{T}}) where {T} = PiTimes{T}
 
-function Base.promote_rule(::Type{Complex{PiTimes{T}}}, ::Type{Irrational{:π}}) where {T}
+function Base.promote_rule(::Type{Complex{PiTimes{T}}}, 
+	::Type{Irrational{:π}}) where {T}
+
 	Complex{PiTimes{T}}
 end
-function Base.promote_rule(::Type{Irrational{:π}}, ::Type{Complex{PiTimes{T}}}) where {T}
+function Base.promote_rule(::Type{Irrational{:π}}, 
+	::Type{Complex{PiTimes{T}}}) where {T}
+
 	Complex{PiTimes{T}}
 end
 
@@ -450,30 +454,30 @@ end
 # Real to PiExpTimes
 
 # PiExpTimes{0} is a special case, equivalent to identity
-Base.convert(::Type{<:PiExpTimes{0}},x::Real) = x
+Base.convert(::Type{PiExpTimes{0}},x::Real) = x
 Base.convert(::Type{PiExpTimes{0,T}},x::Real) where {T<:Real} = convert(T,x)
 
-Base.convert(::Type{<:PiExpTimes{0}},p::PiExpTimes{N,R}) where {R<:Real,N} = p
+Base.convert(::Type{PiExpTimes{0}},p::PiExpTimes{N,R}) where {R<:Real,N} = p
 function Base.convert(::Type{PiExpTimes{0,T}},p::PiExpTimes{N,R}) where {T<:Real,R<:Real,N}
 	convert(T,p)
 end
 
-function Base.convert(::Type{<:PiExpTimes{N,P}},x::T) where {N,T<:Real,P<:Real}
+function Base.convert(::Type{PiExpTimes{N,P}},x::T) where {N,T<:Real,P<:Real}
 	# eg. convert(PiExpTimes{2,Float64},2) == Float64(2/Pi^2)*Pi^2
 	# eg. convert(PiExpTimes{2,Real},2) == 2Pi^-2*Pi^2
 	PiExpTimes{N,P}(convert(P,PiExpTimes{-N}(x)))
 end
-function Base.convert(::Type{<:PiTimes{P}},x::T) where {T<:Real,P<:Real}
+function Base.convert(::Type{PiTimes{P}},x::T) where {T<:Real,P<:Real}
 	# eg. convert(PiTimes{Float64},2) == Float64(2Pi^-1)*Pi
 	# eg. convert(PiTimes{Real},2) == 2Pi^-1*Pi
 	PiTimes{P}(convert(P,PiExpTimes{-1}(x)))
 end
-function Base.convert(::Type{<:PiExpTimes{N}},x::T) where {N,T<:Real}
+function Base.convert(::Type{PiExpTimes{N}},x::T) where {N,T<:Real}
 	# eg. convert(PiExpTimes{2},2)
 	p_new = PiExpTimes{-N,T}(x)
 	PiExpTimes{N,PiExpTimes{-N,T}}(p_new)
 end
-function Base.convert(::Type{<:PiTimes},x::T) where {T<:Real}
+function Base.convert(::Type{PiTimes},x::T) where {T<:Real}
 	# eg. convert(PiTimes,2) == 2Pi^-1*Pi
 	p_new = PiExpTimes{-1,T}(x)
 	PiTimes{PiExpTimes{-1,T}}(p_new)
@@ -500,7 +504,7 @@ function Base.convert(::Type{PiExpTimes},::Irrational{:π}) where {N}
 	convert(PiExpTimes{1},Pi)
 end
 # General case that infers the type
-function Base.convert(::Type{<:PiExpTimes{N}},::Irrational{:π}) where {N}
+function Base.convert(::Type{PiExpTimes{N}},::Irrational{:π}) where {N}
 	convert(PiExpTimes{N},Pi)
 end
 
@@ -546,12 +550,12 @@ end
 function Base.convert(::Type{<:PiExpTimes{<:Any,R}},p::PiExpTimes{M,T}) where {M,T<:Real,R<:Real}
 	PiExpTimes{M,R}(convert(R,p.x))
 end
-function Base.convert(::Type{<:PiExpTimes{N}},p::PiExpTimes{M,T}) where {M,N,T<:Real}
+function Base.convert(::Type{PiExpTimes{N}},p::PiExpTimes{M,T}) where {M,N,T<:Real}
 	# eg. convert(PiExpTimes{2},Pi)
 	p_new = PiExpTimes{M-N,T}(p.x)
 	PiExpTimes{N,PiExpTimes{M-N,T}}(p_new)
 end
-function Base.convert(::Type{<:PiTimes},p::PiExpTimes{M,T}) where {M,T<:Real}
+function Base.convert(::Type{PiTimes},p::PiExpTimes{M,T}) where {M,T<:Real}
 	# eg. convert(PiExpTimes{2},Pi)
 	p_new = PiExpTimes{M-1,T}(p.x)
 	PiTimes{PiExpTimes{M-1,T}}(p_new)
@@ -576,6 +580,7 @@ function Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,R}) where {N,T<:Re
 	PiExpTimes{N,T}(p_new)
 end
 Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,T}) where {N,T<:Real} = p
+Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,T}) where {N,T<:PiExpTimes{M,<:Real} where M} = p
 
 # General nested case
 function Base.convert(::Type{PiExpTimes{N,PiExpTimes{M,R}}},
@@ -619,6 +624,8 @@ function Base.convert(::Type{PiTimes{T}},p::PiExpTimes{N,R}) where {N,T<:Real,R<
 	# eg. convert(PiTimes{Float64},Pi^2) = Float64(Pi)*Pi
 	PiTimes{T}(convert(T,PiExpTimes{N-1,R}(p.x)))
 end
+
+# Pretty-printing
 
 function Base.show(io::IO,p::PiExpTimes{N}) where {N}
 	x = p.x
