@@ -514,6 +514,30 @@ function Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,R}) where {N,T<:Re
 	PiExpTimes{N,T}(p_new)
 end
 
+# Fix for LinRange
+# Use convert instead of constructor
+function Base.lerpi(j::Integer, d::Integer, a::T, b::T) where T<:PiExpTimes
+   Base.@_inline_meta
+   t = j/d
+   convert(T,(1-t)*a + t*b)
+end
+
+function Base._range(start::PiExpTimes{M,T},::Nothing,
+	stop::PiExpTimes{N,T},length::Integer) where {M,N,T}
+	
+	F = PiExpTimes{min(M,N),float(T)}
+	start_f = convert(F,start)
+	stop_f = convert(F,stop)
+	LinRange{F}(start_f,stop_f,length)
+end
+
+function Base.:(:)(start::PiExpTimes{N,T},
+	step::PiExpTimes{N,T},stop::PiExpTimes{N,T}) where {N,T}
+
+	F = PiExpTimes{N,float(T)}
+	StepRangeLen{F,T,T}(start.x,step.x,floor(Int, (stop.x-start.x)/step.x)+1)
+end
+
 # Pretty-printing
 
 function Base.show(io::IO,p::PiExpTimes{N}) where {N}

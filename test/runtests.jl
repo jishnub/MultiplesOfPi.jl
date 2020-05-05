@@ -797,6 +797,42 @@ end
     end
 end
 
+@testset "Range" begin
+    @testset "LinRange" begin
+        l = LinRange(0.0Pi,1.0Pi,10)
+        lpi = LinRange(0,π,10)
+        @test l[1] === 0.0Pi
+        @test l[end] === 1.0Pi
+
+        for i in eachindex(l,lpi)
+            @test l[i] ≈ lpi[i]
+        end
+    end
+    @testset "range" begin
+        @testset "length" begin
+            r = range(0Pi,stop=2Pi,length=2)
+            @test typeof(r) == LinRange{PiExpTimes{1,Float64}}
+            @test r[1] === 0.0Pi
+            @test r[2] === 2.0Pi
+
+            r = range(0Pi,stop=2Pi^2,length=2)
+            @test typeof(r) == LinRange{PiExpTimes{1,Float64}}
+            @test r[1] === 0.0Pi
+            @test r[2] === 2π*Pi
+        end
+        @testset "step" begin
+            r = range(0Pi,stop=2Pi,step=Pi)
+            @test length(r) == 3
+            @test r[1] === 0.0Pi
+            @test r[end] === 2.0Pi
+            @test step(r) === 1.0Pi
+        end
+    end
+    @testset "consistency" begin
+        @test range(2Pi,stop=20Pi,step=9Pi) == range(2Pi,stop=20Pi,length=3)
+    end
+end
+
 @testset "arithmetic" begin
     p = PiTimes(3)
     q = PiTimes(4)
