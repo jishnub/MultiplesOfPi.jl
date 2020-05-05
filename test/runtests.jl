@@ -141,6 +141,7 @@ end
         @test rootval(PiTimes{PiExpTimes{2,Float64}}(1.0Pi^2)) === 1.0
     end
     @testset "rootvaltype" begin
+        @test rootvaltype(Int) === Int
         @test rootvaltype(Pi) === Int
         @test rootvaltype(PiTimes{Int}) === Int
         @test rootvaltype(Pi^2) === Int
@@ -154,10 +155,18 @@ end
     @testset "simplify" begin
         @test simplify(PiTimes{PiExpTimes{2,Float64}}(1.0Pi^2)) === 1.0Pi^3
         @test simplify(convert(PiTimes{PiExpTimes{-1,Float64}},1)) === 1.0
-        z = simplify(Complex(Pi,Pi^2))
+        
+        z = Complex(Pi,Pi^2)
+        z = simplify(z)
         @test z isa Complex{PiExpTimes{1,Real}}
         @test z.re.x === 1
         @test z.im.x === Pi
+        
+        z = Complex(PiTimes{PiTimes}(Pi),PiTimes{PiTimes}(2Pi))
+        z = simplify(z)
+        @test z isa Complex{PiExpTimes{2,Int}}
+        @test z.re.x === 1
+        @test z.im.x === 2
     end
 end
 
@@ -232,6 +241,9 @@ end
             @test p == 2Pi
             @test 2Pi == p
             @test p == q
+
+            @test π == PiExpTimes{-1,PiExpTimes{2,Int}}(Pi^2)
+            @test PiExpTimes{-1,PiExpTimes{2,Int}}(Pi^2) == π
         end
     end
 end
@@ -518,6 +530,7 @@ end
 
                     @test convert(PiExpTimes{0},3) === 3
                     @test convert(PiExpTimes{0},3.5) === 3.5
+                    @test convert(PiExpTimes{0,Float64},3) === 3.0
                 end
             end
         end
@@ -799,13 +812,18 @@ end
 
 @testset "Range" begin
     @testset "LinRange" begin
-        l = LinRange(0.0Pi,1.0Pi,10)
-        lpi = LinRange(0,π,10)
+        l = LinRange(0.0Pi,1.0Pi,11)
+        lpi = LinRange(0,π,11)
         @test l[1] === 0.0Pi
         @test l[end] === 1.0Pi
 
         for i in eachindex(l,lpi)
             @test l[i] ≈ lpi[i]
+        end
+
+        @testset "lerpi" begin
+            @test Base.lerpi(0,l.lendiv,l.start,l.stop) === 0.0Pi
+            @test Base.lerpi(1,l.lendiv,l.start,l.stop) === 0.1Pi
         end
     end
     @testset "range" begin
