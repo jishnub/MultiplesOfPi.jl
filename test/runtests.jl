@@ -589,7 +589,9 @@ end
         @testset "Pi^2" begin
             @test sin(Pi^2) ≈ sin(π^2)
             @test cos(Pi^2) ≈ cos(π^2)
-            @test mapreduce(≈, &, sincos(Pi^2), sincos(π^2))
+            s1, c1 = sincos(Pi^2)
+            s2, c2 = sincos(π^2)
+            @test (s1 ≈ s2) && (c1 ≈ c2)
             @test tan(Pi^2) ≈ tan(π^2)
             @test cot(Pi^2) ≈ cot(π^2)
             @test sinc(Pi^2) ≈ sinc(π^2)
