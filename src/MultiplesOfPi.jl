@@ -1,88 +1,45 @@
 module MultiplesOfPi
 
 export PiExpTimes
-export PiTimes
 export Pi
 
 """
-	PiExpTimes{n}(x)
+	PiExpTimes(x, n)
 
 Construct a number that behaves as `x*π^n` for a real `x` and an integer `n`
 
 # Examples
 ```jldoctest
-julia> PiExpTimes{2}(3)
-3Pi^2
+julia> PiExpTimes(2, 3)
+2Pi^3
 ```
 
-See also: [`PiTimes`](@ref), [`Pi`](@ref)
+See also: [`Pi`](@ref)
 """
-struct PiExpTimes{N,T<:Real} <: AbstractIrrational
+struct PiExpTimes{T<:Real} <: AbstractIrrational
 	x :: T
-	function PiExpTimes{N,T}(x::T) where {N,T<:Real}
-		@assert N isa Integer
-		new{N,T}(x)
-	end
-	# This is needed to avoid recursion
-	function PiExpTimes{N,PiExpTimes{M,T}}(p::PiExpTimes{M,T}) where {N,M,T<:Real}
-		@assert N isa Integer
-		new{N,PiExpTimes{M,T}}(p)
-	end
+	n :: Int
+
+	PiExpTimes{T}(x::T, n::Int) where {T<:Real} = new(x, n)
+	PiExpTimes{PiExpTimes{T}}(p::PiExpTimes{T}, n::Int) where {T<:Real} = new(p, n)
+	PiExpTimes{PiExpTimes}(p::PiExpTimes, n::Int) = new(p, n)
+	PiExpTimes{Irrational{:π}}(p::Irrational{:π}, n::Int) = new(p, n)
 end
 
-function PiExpTimes{N,T}(x::Real) where {N,T}
-	PiExpTimes{N,T}(convert(T,x))
-end
-function PiExpTimes{N,PiExpTimes{0,T}}(x::Real) where {N,T<:Real}
-	PiExpTimes{N,T}(convert(T,x))
-end
+PiExpTimes{T}(x::Real, n::Int) where {T<:Real} = PiExpTimes{T}(T(x), n)
+PiExpTimes{T}(::Irrational{:π}, n::Int) where {T<:Real} = PiExpTimes{T}(T(1), n + 1)
+PiExpTimes{T}(p::PiExpTimes, n::Int) where {T<:Real} = PiExpTimes{T}(p.x, p.n + n)
+PiExpTimes{T}(x::Real, n::Integer = 0) where {T<:Real} = PiExpTimes{T}(x, Int(n))
 
-# Type T is inferred from x
-PiExpTimes{N}(x::T) where {N,T<:Real} = PiExpTimes{N,T}(x)
-
-for R in (Real,PiExpTimes)
-	@eval PiExpTimes{0}(x::$R) = x
-	@eval PiExpTimes{0,T}(x::$R) where {T<:Real} = convert(T,x)
-end
-function PiExpTimes{0,PiExpTimes{M,T}}(p::PiExpTimes{M}) where {M,T<:Real}
-	convert(PiExpTimes{M,T},p)
-end
-
-PiExpTimes{N}(p::PiExpTimes{M}) where {N,M} = PiExpTimes{N+M}(p.x)
-
-function PiExpTimes{N,PiExpTimes{M,T}}(p::PiExpTimes{M,R}) where {N,M,T<:Real,R<:Real}
-	p_new = convert(PiExpTimes{M,T},p)
-	PiExpTimes{N,typeof(p_new)}(p_new)
-end
-function PiExpTimes{N,PiExpTimes{M}}(p::PiExpTimes{M,T}) where {N,M,T<:Real}
-	PiExpTimes{N,PiExpTimes{M,T}}(p)
-end
-function PiExpTimes{N,PiExpTimes{0,T}}(p::PiExpTimes{M,R}) where {N,M,T<:Real,R<:Real}
-	PiExpTimes{N,T}(p)
-end
-
-PiExpTimes{N}(::Irrational{:π}) where {N} = PiExpTimes{N+1}(1)
-
-"""
-	PiTimes(x)
-
-Construct a number that behaves as `x*π` for a real `x`. `PiTimes` is an alias for
-`PiExpTimes{1}`
-
-# Examples
-```jldoctest
-julia> PiTimes(3)
-3Pi
-```
-
-See also: [`PiExpTimes`](@ref), [`Pi`](@ref)
-"""
-const PiTimes{T<:Real} = PiExpTimes{1,T}
+PiExpTimes(::Irrational{:π}, n::Integer = 0) = PiExpTimes{Int}(1, Int(n) + 1)
+PiExpTimes(x::Real, n::Integer = 0) = PiExpTimes{typeof(x)}(x, Int(n))
+# avoid nesting
+PiExpTimes(p::PiExpTimes, n::Integer = 0) = PiExpTimes(p.x, p.n + n)
 
 """
 	Pi
 
-The number `PiTimes(1)`, numerically equivalent to `pi`. 
+The number `PiExpTimes(1, 1)`, numerically equivalent to `pi`.
 Using `Pi` instead of `pi` often produces results that avoid floating-point inaccuracies.
 
 # Examples
@@ -90,101 +47,75 @@ Using `Pi` instead of `pi` often produces results that avoid floating-point inac
 julia> sin(Pi)
 0.0
 
-julia> sin(pi)
+julia> sin(π)
 1.2246467991473532e-16
+
+julia> exp(im*Pi) + 1 == 0
+true
+
+julia> exp(im*π) + 1 == 0
+false
+
+julia> (2//3)Pi + Pi == (5//3)Pi
+true
+
+julia> (2//3)π + π == (5//3)π
+false
 ```
 """
-const Pi = PiTimes(1)
+const Pi = PiExpTimes(1, 1)
 
-# Helper functions to get rid of nesting
-netexponent(p::PiExpTimes{N,T}) where {N,T<:Real} = N + netexponent(T,p.x)::Int
-netexponent(p::Real) = 0
-
-netexponent(::Type{<:Real},::Real) = 0
-netexponent(::Type{Real},p::PiExpTimes{N,T}) where {N,T} = N + netexponent(T,p.x)::Int
-netexponent(::Type{PiExpTimes{N,Real}},p::PiExpTimes{N,T}) where {N,T<:Real} = N + netexponent(T,p.x)::Int
-netexponent(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,T}) where {N,T<:Real} = N + netexponent(T,p.x)::Int
-
-rootvaltype(::T) where {T} = rootvaltype(T)
-rootvaltype(::Type{PiExpTimes{N,T}}) where {N,T<:Real} = rootvaltype(T)
-rootvaltype(::Type{T}) where {T<:Real} = T
-
-rootval(p::PiExpTimes{<:Any,<:Real}) = rootval(p.x)
-rootval(x::Real) = x
-
-"""
-	simplify(p)
-
-Simplify a nested expression involving `PiExpTimes` 
-and reduce it to a single object that is not nested.
-
-# Examples
-```jldoctest
-julia> PiExpTimes{2,PiExpTimes{1,Int}}(Pi) |> MultiplesOfPi.simplify
-Pi^3
-```
-"""
-simplify(x) = x
-function simplify(p::PiExpTimes{<:Any,<:PiExpTimes})
-	T = rootvaltype(p)
-	N = netexponent(p)
-	x = rootval(p)
-	PiExpTimes{N,T}(x)
+function Base.:(<)(p::PiExpTimes, q::PiExpTimes)
+	p.x == q.x ? p.n < q.n :
+	p.n == q.n ? p.x < q.x :
+	float(p) < float(q)
 end
-function simplify(p::Complex{<:PiExpTimes{<:Any,<:PiExpTimes}})
-	Complex(simplify(p.re),simplify(p.im))
-end
-
-# Comparison
-
-Base.:(<)(p::PiExpTimes{N},q::PiExpTimes{N}) where {N} = p.x < q.x
-function Base.:(<)(p::PiExpTimes{M},q::PiExpTimes{N}) where {M,N}
-	p.x == q.x ? M < N : float(p) < float(q)
-end
-
-Base.:(<)(p::PiTimes,::Irrational{:π}) = p.x < one(p.x)
-Base.:(<)(::Irrational{:π},p::PiTimes) = p.x > one(p.x)
-
-Base.:(==)(p::PiExpTimes{N},q::PiExpTimes{N}) where {N} = p.x == q.x
-
-function Base.:(==)(p::PiExpTimes,q::PiExpTimes)
+function Base.:(==)(p::T, q::T) where {T<:PiExpTimes}
 	iszero(p.x) && iszero(q.x) ? true :
-	float(p) == float(q)
-end
-Base.:(==)(p::PiExpTimes{<:Any,<:PiExpTimes},q::PiExpTimes) = simplify(p) == q
-Base.:(==)(p::PiExpTimes,q::PiExpTimes{<:Any,<:PiExpTimes}) = p == simplify(q)
-function Base.:(==)(p::PiExpTimes{<:Any,<:PiExpTimes},
-	q::PiExpTimes{<:Any,<:PiExpTimes})
-	
-	simplify(p) == simplify(q)
+	(p.n == q.n && p.x == q.x) ? true :
+	false
 end
 
-Base.:(==)(p::PiExpTimes,y::Real) = float(simplify(p)) == y
-Base.:(==)(y::Real,p::PiExpTimes) = float(simplify(p)) == y
+# Compare nested types by simplifying and promoting to a common type
+function Base.:(==)(p::PiExpTimes, q::PiExpTimes)
+	p2, q2 = promote(simplify(p), simplify(q))
+	p2 == q2
+end
 
-Base.:(==)(::Irrational{:π},p::PiExpTimes) = false
-Base.:(==)(p::PiExpTimes,::Irrational{:π}) = false
+Base.:(==)(p::PiExpTimes, x::Real) = p == PiExpTimes(x, 0)
+Base.:(==)(x::Real, p::PiExpTimes) = p == x
 
-Base.:(==)(::Irrational{:π},p::PiExpTimes{<:Any,<:PiExpTimes}) = (Pi == simplify(p))
-Base.:(==)(p::PiExpTimes{<:Any,<:PiExpTimes},::Irrational{:π}) = (Pi == simplify(p))
+simplify(p) = p
+simplify(p::PiExpTimes{<:PiExpTimes}) = simplify(p.x) * Pi^(p.n)
 
-Base.:(==)(p::PiTimes,::Irrational{:π}) = isone(simplify(p.x))
-Base.:(==)(::Irrational{:π},p::PiTimes) = isone(simplify(p.x))
+for f in [:(<), :(==)]
+	@eval Base.$f(p::PiExpTimes, ::Irrational{:π}) = $f(p, Pi)
+	@eval Base.$f(::Irrational{:π}, p::PiExpTimes) = $f(Pi, p)
+end
+
+Base.promote_rule(::Type{Irrational{:π}}, ::Type{PiExpTimes{T}}) where {T} = PiExpTimes{T}
+Base.promote_rule(::Type{PiExpTimes{T}}, ::Type{Irrational{:π}}) where {T} = PiExpTimes{T}
+
+Base.promote_rule(::Type{PiExpTimes{T}}, ::Type{Bool}) where {T} = PiExpTimes{T}
+Base.promote_rule(::Type{PiExpTimes{T}}, ::Type{S}) where {T,S<:AbstractIrrational} = PiExpTimes{promote_type(S,T)}
+Base.promote_rule(::Type{PiExpTimes{T}}, ::Type{S}) where {T,S<:Real} = PiExpTimes{promote_type(S,T)}
+Base.promote_rule(::Type{PiExpTimes{T}}, ::Type{Float16}) where {T} = PiExpTimes{promote_type(Float16,T)}
+Base.promote_rule(::Type{PiExpTimes{T}}, ::Type{Float32}) where {T} = PiExpTimes{promote_type(Float32,T)}
+
+Base.promote_rule(::Type{PiExpTimes{T}}, ::Type{PiExpTimes{S}}) where {T,S} = PiExpTimes{promote_type(T, S)}
+
+Base.promote_rule(::Type{PiExpTimes{T}}, ::Type{Complex{S}}) where {T<:Real,S<:Real} = Complex{PiExpTimes{promote_type(T, S)}}
 
 for T in (:Float64,:Float32,:Float16)
-	@eval begin 
-		function Base.$T(p::PiExpTimes{N}) where {N}
-			if N > 0
-				return $T(p.x*π^N)
+	@eval begin
+		function Base.$T(p::PiExpTimes)
+			n = p.n
+			if n == 0
+				return $T(p.x)
+			elseif n > 0
+				return $T(p.x*π^n)
 			else
-				return $T(p.x*inv(float(π))^-N)
-			end
-		end
-		function Base.$T(p::PiTimes)
-			if isone(p.x)
-				return $T(π)
-			else
-				return $T(p.x*π)
+				return $T(p.x*inv(float(π))^-n)
 			end
 		end
 	end
@@ -192,368 +123,132 @@ end
 
 # BigFloats need to be handled differently to gain accuracy
 # Convert π to BigFloat before multiplying
-function Base.BigFloat(p::PiExpTimes{N}) where {N}
-	if N > 0
-		return BigFloat(p.x)*BigFloat(π)^N
+function Base.BigFloat(p::PiExpTimes)
+	n = p.n
+	if n == 0
+		return BigFloat(p.x)
+	elseif n > 0
+		return BigFloat(p.x)*BigFloat(π)^n
 	else
-		return BigFloat(p.x)*inv(BigFloat(π))^-N
-	end
-end
-function Base.BigFloat(p::PiTimes)
-	if isone(p.x)
-		return BigFloat(π)
-	else
-		return BigFloat(p.x)*π
+		return BigFloat(p.x)*inv(BigFloat(π))^-n
 	end
 end
 
-for f in (:iszero,:isfinite,:isnan)
+for f in (:iszero, :isfinite, :isnan)
 	@eval Base.$f(p::PiExpTimes) = $f(p.x)
 end
 
 # Unfortunately Irrational numbers do not have a multiplicative identity of the same type,
 # so we make do with something that works
-Base.one(::T) where {T<:PiExpTimes} = one(T)
-Base.one(::Type{<:PiExpTimes}) = true
-Base.one(::Type{<:PiExpTimes{0,T}}) where {T} = one(T)
+Base.one(::Type{PiExpTimes}) = true
+Base.isone(p::PiExpTimes) = (x = simplify(p); isone(x.x) && iszero(x.n))
 
-Base.zero(::T) where {T<:PiExpTimes} = zero(T)
-Base.zero(::Type{PiExpTimes{N,T}}) where {N,T} = PiExpTimes{N,T}(zero(T))
+Base.zero(p::PiExpTimes{T}) where {T} = PiExpTimes{T}(zero(T), p.n)
+Base.zero(::Type{PiExpTimes{T}}) where {T} = PiExpTimes{T}(zero(T))
 
 Base.sign(p::PiExpTimes) = sign(p.x)
 Base.signbit(p::PiExpTimes) = signbit(p.x)
 
 # Define trigonometric functions
 
-@inline Base.sin(p::PiTimes) = sinpi(p.x)
-@inline Base.cos(p::PiTimes) = cospi(p.x)
-@inline Base.sincos(p::PiTimes) = (sin(p),cos(p))
+# this is type-unstable, but Union splitting does its magic
+@inline dividebypiexp(p::PiExpTimes, n) = p.n == n ? p.x : p.x * float(π)^(p.n-n)
+@inline dividebypi(p) = dividebypiexp(p, 1)
 
-@inline Base.cis(p::PiTimes) = Complex(cos(p),sin(p))
-
-Base.sinc(p::PiExpTimes) = sinc(float(p))
-
-function Base.tan(p::PiTimes{T}) where {T}
-	iszero(p.x) && return p.x
-	r = abs(rem(p.x,one(p.x)))
-	iszero(r) && return copysign(zero(T),p.x)
-	2r == one(r) && return copysign(T(Inf),p.x)
-	4r == one(r) && return copysign(one(T),p.x)
-	tan(p.x*π)
+Base.sin(p::PiExpTimes) = p.n == 0 ? sin(p.x) : sinpi(dividebypi(p))
+Base.cos(p::PiExpTimes) = p.n == 0 ? cos(p.x) : cospi(dividebypi(p))
+if VERSION > v"1.6.0"
+	Base.sincos(p::PiExpTimes) = p.n == 0 ? sincos(p.x) : sincospi(dividebypi(p))
+else
+	Base.sincos(p::PiExpTimes) = (sin(p),cos(p))
 end
 
-# Hyperbolic functions
+function Base.cis(p::PiExpTimes)
+	s, c = sincos(p);
+	Complex(c, s)
+end
 
-function Base.tanh(z::Complex{<:PiTimes})
+@inline function Base.tan(p::PiExpTimes{T}) where {T}
+	Tf = float(T)
+	if simplify(p).n == 1
+		r = abs(rem(p.x, one(p.x)))
+		iszero(r) && return copysign(zero(Tf), p.x)
+		2r == one(r) && return copysign(Tf(Inf), p.x)
+		4r == one(r) && return copysign(one(Tf), p.x)
+	end
+	tan(float(p))
+end
+
+function Base.tanh(z::Complex{<:PiExpTimes})
 	iszero(real(z)) && return im*tan(imag(z))
 	tanh(float(z))
 end
 
+Base.sinc(p::PiExpTimes) = sinc(float(p))
+
 # Arithmetic operators
 
-Base.:(+)(p1::PiExpTimes{N},p2::PiExpTimes{N}) where {N} = PiExpTimes{N}(p1.x + p2.x)
-function Base.:(+)(p1::PiExpTimes{M},p2::PiExpTimes{N}) where {M,N}
-	p1conv = convert(PiExpTimes{min(M,N)},p1)
-	p2conv = convert(PiExpTimes{min(M,N)},p2)
-	PiExpTimes{min(M,N)}(p1conv.x + p2conv.x)
+function match_exponent(p1, p2)
+	minexp = min(p1.n, p2.n)
+	x = dividebypiexp(p1, minexp)
+	y = dividebypiexp(p2, minexp)
+	x, y, minexp
 end
 
-Base.:(+)(p::PiTimes,::Irrational{:π}) = PiTimes(p.x + one(p.x))
-Base.:(+)(::Irrational{:π},p::PiTimes) = PiTimes(p.x + one(p.x))
-
-Base.:(-)(p::PiExpTimes{N}) where {N} = PiExpTimes{N}(-p.x)
-
-Base.:(-)(p1::PiExpTimes{N},p2::PiExpTimes{N}) where {N} = PiExpTimes{N}(p1.x-p2.x)
-function Base.:(-)(p1::PiExpTimes{M},p2::PiExpTimes{N}) where {M,N}
-	p1conv = convert(PiExpTimes{min(M,N)},p1)
-	p2conv = convert(PiExpTimes{min(M,N)},p2)
-	PiExpTimes{min(M,N)}(p1conv.x - p2conv.x)
+function Base.:(+)(p1::PiExpTimes, p2::PiExpTimes)
+	x, y, exponent = match_exponent(p1, p2)
+	PiExpTimes(x + y, exponent)
 end
 
-Base.:(-)(p::PiTimes,::Irrational{:π}) = PiTimes(p.x - one(p.x))
-Base.:(-)(::Irrational{:π},p::PiTimes) = PiTimes(one(p.x) - p.x)
+Base.:(-)(p::PiExpTimes) = PiExpTimes(-p.x, p.n)
 
-Base.:(/)(p1::PiExpTimes{N},p2::PiExpTimes{N}) where {N} = p1.x/p2.x
-Base.:(/)(p1::PiExpTimes{M},p2::PiExpTimes{N}) where {M,N} = PiExpTimes{M-N}(p1.x/p2.x)
-
-Base.:(/)(y::Real,p::PiExpTimes) = y*inv(p)
-Base.:(/)(p1::PiExpTimes{N},y::Real) where {N} = PiExpTimes{N}(p1.x/y)
-
-Base.:(/)(::Irrational{:π},p::PiExpTimes{N}) where {N} = PiExpTimes{1-N}(inv(p.x))
-Base.:(/)(::Irrational{:π},p::PiTimes) = inv(p.x)
-Base.:(/)(p::PiExpTimes{N},::Irrational{:π}) where {N} = PiExpTimes{N-1}(p.x)
-Base.:(/)(p::PiTimes,::Irrational{:π})= p.x
-
-function Base.:(/)(p::PiExpTimes{N},z::Complex{<:PiExpTimes{M}}) where {M,N}
-	are,aim = p.x, zero(p.x)
-	bre,bim = real(z).x, imag(z).x
-	Complex(are,aim)/Complex(bre,bim) * PiExpTimes{N-M}(1)
+function Base.:(-)(p1::PiExpTimes, p2::PiExpTimes)
+	x, y, exponent = match_exponent(p1, p2)
+	PiExpTimes(x - y, exponent)
 end
 
-function Base.:(/)(p::PiExpTimes{N},z::Complex{<:PiExpTimes{N}}) where {N}
-	are,aim = p.x, zero(p.x)
-	bre,bim = real(z).x, imag(z).x
-	Complex(are,aim)/Complex(bre,bim)
+Base.inv(p::PiExpTimes) = PiExpTimes(inv(p.x), -p.n)
+
+function Base.:(*)(p1::PiExpTimes, p2::PiExpTimes)
+	PiExpTimes(p1.x*p2.x, p1.n+p2.n)
+end
+function Base.:(/)(p1::PiExpTimes, p2::PiExpTimes)
+	PiExpTimes(p1.x/p2.x, p1.n-p2.n)
 end
 
-function Base.:(/)(a::Complex{<:PiExpTimes{N}},b::Complex{<:Real}) where {N}
-	are,aim = real(a).x, imag(a).x
-	bre,bim = reim(b)
-	Complex(are,aim)/Complex(bre,bim) * PiExpTimes{N}(1)
+for f in [:(+), :(-), :(*), :(/)]
+	@eval Base.$f(p::PiExpTimes, ::Irrational{:π}) = $f(p, Pi)
+	@eval Base.$f(::Irrational{:π}, p::PiExpTimes) = $f(Pi, p)
 end
 
-function Base.:(/)(a::Complex{<:PiExpTimes{N}},b::Complex{<:PiExpTimes{M}}) where {M,N}
-	are,aim = real(a).x, imag(a).x
-	bre,bim = real(b).x, imag(b).x
-	Complex(are,aim)/Complex(bre,bim) * PiExpTimes{N-M}(1)
-end
+Base.:(*)(b::Bool, p::PiExpTimes) = ifelse(b, p, flipsign(zero(p), p.x))
+Base.:(/)(b::Bool, p::PiExpTimes) = PiExpTimes(b / p.x, -p.n)
 
-function Base.:(/)(a::Complex{<:PiExpTimes{N}},b::Complex{<:PiExpTimes{N}}) where {N}
-	are,aim = real(a).x, imag(a).x
-	bre,bim = real(b).x, imag(b).x
-	Complex(are,aim)/Complex(bre,bim)
-end
-
-Base.inv(p::PiExpTimes{N}) where {N} = PiExpTimes{-N}(inv(p.x))
-
-Base.:(*)(p1::PiExpTimes{N},y::Real) where {N} = PiExpTimes{N}(p1.x*y)
-Base.:(*)(y::Real,p1::PiExpTimes{N}) where {N} = PiExpTimes{N}(p1.x*y)
-
-Base.:(*)(b::Bool,p::PiExpTimes) = ifelse(b,p,flipsign(zero(p),p.x))
-Base.:(*)(p::PiExpTimes,b::Bool) = ifelse(b,p,flipsign(zero(p),p.x))
-
-function Base.:(*)(p1::PiExpTimes{M},p2::PiExpTimes{N}) where {M,N}
-	PiExpTimes{M+N}(p1.x*p2.x)
-end
-
-Base.:(*)(z::Complex{Bool},p::PiExpTimes) = Complex(real(z)*p,imag(z)*p)
-Base.:(*)(p::PiExpTimes,z::Complex{Bool}) = Complex(real(z)*p,imag(z)*p)
-
-Base.:(*)(::Irrational{:π},p::PiExpTimes) = PiTimes(p)
-Base.:(*)(p::PiExpTimes,::Irrational{:π}) = PiTimes(p)
-
-# Not type-stable!
-Base.:(^)(p::PiExpTimes{N},n::Integer) where {N} = PiExpTimes{N*n}(p.x^n)
-
-Base.literal_pow(::typeof(^), p::PiExpTimes, ::Val{0}) = one(p.x)
-Base.literal_pow(::typeof(^), p::PiExpTimes, ::Val{1}) = p
-for i=2:5
-	@eval Base.literal_pow(::typeof(^), p::PiExpTimes{N}, ::Val{$i}) where {N} = PiExpTimes{$i*N}(p.x^$i)
-end
-
-for op in Symbol[:/,:*]
-	@eval Base.$op(p::PiExpTimes,x::AbstractIrrational) = $op(Float64(p),Float64(x))
-	@eval Base.$op(x::AbstractIrrational,p::PiExpTimes) = $op(Float64(x),Float64(p))
-end
+Base.:(^)(p::PiExpTimes, n::Integer) = PiExpTimes(p.x^n, n*p.n)
 
 # Rational divide
-Base.:(//)(p::PiExpTimes{N}, n::Real) where {N} = PiExpTimes{N}(p.x//n)
-Base.:(//)(n::Real, p::PiExpTimes{N}) where {N} = PiExpTimes{-N}(n//p.x)
-Base.:(//)(p::PiExpTimes{M},q::PiExpTimes{N}) where {M,N} = PiExpTimes{M-N}(p.x//q.x)
-Base.:(//)(p::PiExpTimes{N},q::PiExpTimes{N}) where {N} = p.x//q.x
-
-Base.:(//)(::Irrational{:π},p::PiExpTimes{N}) where {N} = PiExpTimes{1-N}(1//p.x)
-Base.:(//)(p::PiExpTimes{N},::Irrational{:π}) where {N} = PiExpTimes{N-1}(p.x//1)
-Base.:(//)(::Irrational{:π},p::PiTimes) = 1//p.x
-Base.:(//)(p::PiTimes,::Irrational{:π}) = p.x//1
-
-Base.:(//)(p::Complex{<:PiExpTimes},q::PiExpTimes) = Complex(real(p)//q,imag(p)//q)
-
-function Base.:(//)(p::PiExpTimes{N},z::Complex{<:PiExpTimes{M}}) where {M,N}
-	are,aim = p.x, zero(p.x)
-	bre,bim = real(z).x, imag(z).x
-	Complex(are,aim)//Complex(bre,bim) * PiExpTimes{N-M}(1)
-end
-
-function Base.:(//)(p::PiExpTimes{N},z::Complex{<:PiExpTimes{N}}) where {N}
-	are,aim = p.x, zero(p.x)
-	bre,bim = real(z).x, imag(z).x
-	Complex(are,aim)//Complex(bre,bim)
-end
-
-function Base.:(//)(a::Complex{<:PiExpTimes{N}},b::Complex{<:PiExpTimes{M}}) where {M,N}
-	are,aim = real(a).x, imag(a).x
-	bre,bim = real(b).x, imag(b).x
-	Complex(are,aim)//Complex(bre,bim) * PiExpTimes{N-M}(1)
-end
-
-function Base.:(//)(a::Complex{<:PiExpTimes{N}},b::Complex{<:PiExpTimes{N}}) where {N}
-	are,aim = real(a).x, imag(a).x
-	bre,bim = real(b).x, imag(b).x
-	Complex(are,aim)//Complex(bre,bim)
-end
-
-# Conversion and promotion
-function Base.promote_rule(::Type{PiExpTimes{N,R}},::Type{PiExpTimes{N,S}}) where {N,R<:Real,S<:Real}
-	PiExpTimes{N,promote_type(R,S)}
-end
-function Base.promote_rule(::Type{<:PiExpTimes{N}},::Type{<:PiExpTimes{N}}) where {N}
-	PiExpTimes{N}
-end
-function Base.promote_rule(::Type{PiExpTimes{M1,R}},::Type{PiExpTimes{M2,R}}) where {M1,M2,R<:Real}
-	PiExpTimes{N,R} where N
-end
-function Base.promote_rule(::Type{PiExpTimes{M1,R}},::Type{PiExpTimes{M2,S}}) where {M1,M2,R<:Real,S<:Real}
-	PiExpTimes{N,typejoin(R,S)} where N
-end
-function Base.promote_rule(::Type{<:PiExpTimes{M1}},::Type{<:PiExpTimes{M2}}) where {M1,M2}
-	PiExpTimes{N} where N
-end
-
-Base.promote_rule(::Type{PiTimes{T}}, ::Type{Irrational{:π}}) where {T} = PiTimes{T}
-Base.promote_rule(::Type{Irrational{:π}}, ::Type{PiTimes{T}}) where {T} = PiTimes{T}
-
-function Base.promote_rule(::Type{Complex{PiTimes{T}}}, 
-	::Type{Irrational{:π}}) where {T}
-
-	Complex{PiTimes{T}}
-end
-function Base.promote_rule(::Type{Irrational{:π}}, 
-	::Type{Complex{PiTimes{T}}}) where {T}
-
-	Complex{PiTimes{T}}
-end
-
-function Base.promote(p::PiExpTimes{N,T},
-	q::PiExpTimes{M,R}) where {M,N,R<:Real,T<:Real}
-
-	U = PiExpTimes{min(M,N),Real}
-	convert(U,p), convert(U,q)
-end
-function Base.promote(p::PiExpTimes{N,T},
-	q::PiExpTimes{N,R}) where {N,R<:Real,T<:Real}
-
-	U = PiExpTimes{N,promote_type(R,T)}
-	convert(U,p), convert(U,q)
-end
-Base.promote(p::T,q::T) where {T<:PiExpTimes} = (p,q)
-
-# Conversions
-
-struct IncompatibleTypesError end
-Base.showerror(io::IO,e::IncompatibleTypesError) = print(io,
-	"Incompatible types, try converting to a floating-point type or to Real")
-
-# PiExpTimes to NonFloatTypes
-
-function Base.convert(::Type{<:Union{Integer,Rational,AbstractIrrational}},p::PiExpTimes)
-	throw(IncompatibleTypesError())
-end
-
-# Real to PiExpTimes
-
-# PiExpTimes{0} is a special case, equivalent to identity
-Base.convert(::Type{PiExpTimes{0}},x::Real) = x
-Base.convert(::Type{PiExpTimes{0,T}},x::Real) where {T<:Real} = convert(T,x)
-
-Base.convert(::Type{PiExpTimes{0}},p::PiExpTimes{N,R}) where {R<:Real,N} = p
-function Base.convert(::Type{PiExpTimes{0,T}},p::PiExpTimes{N,R}) where {T<:Real,R<:Real,N}
-	convert(T,p)
-end
-
-function Base.convert(::Type{PiExpTimes{N,P}},x::T) where {N,T<:Real,P<:Real}
-	# eg. convert(PiExpTimes{2,Float64},2) == Float64(2/Pi^2)*Pi^2
-	# eg. convert(PiExpTimes{2,Real},2) == 2Pi^-2*Pi^2
-	PiExpTimes{N,P}(convert(P,PiExpTimes{-N}(x)))
-end
-function Base.convert(::Type{PiExpTimes{N}},x::T) where {N,T<:Real}
-	# eg. convert(PiExpTimes{2},2)
-	p_new = PiExpTimes{-N,T}(x)
-	PiExpTimes{N,PiExpTimes{-N,T}}(p_new)
-end
-
-# Irrational{π} to PiExpTimes
-
-# Infer the type and set exponent to 1
-Base.convert(::Type{PiExpTimes},::Irrational{:π}) = Pi
-
-# General case that infers the type
-function Base.convert(::Type{PiExpTimes{N}},::Irrational{:π}) where {N}
-	convert(PiExpTimes{N},Pi)
-end
-
-function Base.convert(::Type{PiExpTimes{N,T}},::Irrational{:π}) where {N,T<:Real}
-	# eg. convert(PiExpTimes{2,Float64},π) == Float64(1/π)*Pi^2
-	# eg. convert(PiExpTimes{2,Real},π) == Pi^-1*Pi^2
-	# eg. convert(PiExpTimes{2,Int},π) == Int(Pi^-1)*Pi^2 => error
-	PiExpTimes{N,T}(convert(T,PiExpTimes{1-N}(1)))
-end
-
-# Conversion from PiExpTimes to PiExpTimes
-# General case without types specified, will be inferred
-# Safe to run this as there won't be an error
-Base.convert(::Type{PiExpTimes},p::PiExpTimes) = p
-
-function Base.convert(::Type{PiExpTimes{<:Any,R}},p::PiExpTimes{M,T}) where {M,T<:Real,R<:Real}
-	PiExpTimes{M,R}(convert(R,p.x))
-end
-function Base.convert(::Type{PiExpTimes{N}},p::PiExpTimes{M,T}) where {M,N,T<:Real}
-	# eg. convert(PiExpTimes{2},Pi) == Pi^-1*Pi^2
-	p_new = PiExpTimes{M-N,T}(p.x)
-	PiExpTimes{N,PiExpTimes{M-N,T}}(p_new)
-end
-
-# General case with type and exponent conversion
-function Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{M,R}) where {M,N,T<:Real,R<:Real}
-	# eg. convert(PiExpTimes{2,Real},Pi) = Pi^-1*Pi^2
-	# eg. convert(PiExpTimes{2,Float64},Pi) = Float64(Pi^-1)*Pi^2
-	# eg. convert(PiExpTimes{2,Int},Pi) = Int(Pi^-1)*Pi^2 => error
-	# This fails as Pi^-1 is not an Int
-	
-	p_new = PiExpTimes{M-N}(p.x)
-	PiExpTimes{N,T}(convert(T,p_new))
-end
-
-# Special cases with identical exponents
-Base.convert(::Type{PiExpTimes{N}},p::PiExpTimes{N}) where {N} = p
-Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,T}) where {N,T<:Real} = p
-
-function Base.convert(::Type{PiExpTimes{N,T}},p::PiExpTimes{N,R}) where {N,T<:Real,R<:Real}
-	# Error checks
-	p_new = convert(T,p.x)
-	PiExpTimes{N,T}(p_new)
-end
-
-# Fix for LinRange
-# Use convert instead of constructor
-function Base.lerpi(j::Integer, d::Integer, a::T, b::T) where T<:PiExpTimes
-   Base.@_inline_meta
-   t = j/d
-   convert(T,(1-t)*a + t*b)
-end
-
-function Base._range(start::PiExpTimes{M,T},::Nothing,
-	stop::PiExpTimes{N,T},length::Integer) where {M,N,T}
-	
-	F = PiExpTimes{min(M,N),float(T)}
-	start_f = convert(F,start)
-	stop_f = convert(F,stop)
-	LinRange{F}(start_f,stop_f,length)
-end
-
-function Base.:(:)(start::PiExpTimes{N,T},
-	step::PiExpTimes{N,T},stop::PiExpTimes{N,T}) where {N,T}
-
-	F = PiExpTimes{N,float(T)}
-	StepRangeLen{F,T,T}(start.x,step.x,floor(Int, (stop.x-start.x)/step.x)+1)
-end
+Base.:(//)(p::PiExpTimes, q::PiExpTimes) = PiExpTimes(p.x//q.x, p.n - q.n)
+Base.:(//)(p::PiExpTimes, y::Real) = PiExpTimes(p.x//y, p.n)
+Base.:(//)(p::PiExpTimes, ::Irrational{:π}) = PiExpTimes(p.x//1, p.n-1)
+Base.:(//)(y::Real, p::PiExpTimes) = PiExpTimes(y//p.x, -p.n)
+Base.:(//)(::Irrational{:π}, p::PiExpTimes) = PiExpTimes(1//p.x, -p.n+1)
 
 # Pretty-printing
 
-function Base.show(io::IO,p::PiExpTimes{N}) where {N}
+function Base.show(io::IO, p::PiExpTimes)
 	x = p.x
 
-	expstr(p) = isone(N) ? "Pi" : "Pi^"*string(N)
-	
+	expstr(p) = isone(p.n) ? "Pi" : "Pi^"*string(p.n)
+
 	tostr(x,p) = isone(x) ? expstr(p) : string(x)*"*"*expstr(p)
 	tostr(x::Integer,p) = isone(x) ? expstr(p) : string(x)*expstr(p)
-	tostr(x::AbstractFloat,p) = isone(x) ? expstr(p) : 
+	tostr(x::AbstractFloat,p) = isone(x) ? expstr(p) :
 								isinf(x) || isnan(x) ? string(x) :
 								string(x)*"*"*expstr(p)
 	tostr(x::Rational,p) = "("*string(x)*")"*expstr(p)
 
 	str = iszero(x) ? string(x) : tostr(x,p)
-	print(io,str)
+	print(io, str)
 end
 
 end # module
