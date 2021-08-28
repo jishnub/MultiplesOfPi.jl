@@ -1,8 +1,10 @@
 # MultiplesOfPi
 
-
+[![CI](https://github.com/jishnub/MultiplesOfPi.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/jishnub/MultiplesOfPi.jl/actions/workflows/ci.yml)
 [![Codecov](https://codecov.io/gh/jishnub/MultiplesOfPi.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/jishnub/MultiplesOfPi.jl)
 [![Coverage Status](https://coveralls.io/repos/github/jishnub/MultiplesOfPi.jl/badge.svg?branch=master)](https://coveralls.io/github/jishnub/MultiplesOfPi.jl?branch=master)
+[![docs:stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://jishnub.github.io/MultiplesOfPi.jl/stable)
+[![docs:dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://jishnub.github.io/MultiplesOfPi.jl/dev)
 
 # Introduction
 
