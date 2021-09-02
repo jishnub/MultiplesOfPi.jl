@@ -2,9 +2,9 @@ using MultiplesOfPi
 using Test
 
 @testset "Constructor" begin
-    @test (1)*Pi ≈ π
-    @test (1.5)*Pi ≈ 1.5*pi
-    @test (1//2)*Pi ≈ π/2
+    @test (@inferred (1)*Pi) ≈ π
+    @test (@inferred (1.5)*Pi) ≈ 1.5*pi
+    @test (@inferred (1//2)*Pi) ≈ π/2
 
     @test (1)*Pi === Pi
     @test Pi == π
@@ -228,13 +228,13 @@ end
 
     @testset "multiplication" begin
         @testset "PiTimes" begin
-            @test p*p === PiExpTimes(p.x^2, 2)
-            @test p*p ≈ (p.x*π)^2
-            @test p*q === PiExpTimes(p.x*q.x, 2)
-            @test q*p === PiExpTimes(p.x*q.x, 2)
-            @test p*q ≈ (p.x*q.x)*π^2
-            @test p*r === PiExpTimes(p.x*r.x, 3) ≈ (p.x*r.x)*π^3
-            @test r*p === PiExpTimes(p.x*r.x, 3) ≈ (p.x*r.x)*π^3
+            @test (@inferred p*p) === PiExpTimes(p.x^2, 2)
+            @test (@inferred p*p) ≈ (p.x*π)^2
+            @test (@inferred p*q) === PiExpTimes(p.x*q.x, 2)
+            @test (@inferred q*p) === PiExpTimes(p.x*q.x, 2)
+            @test (@inferred p*q) ≈ (p.x*q.x)*π^2
+            @test (@inferred p*r) === PiExpTimes(p.x*r.x, 3) ≈ (p.x*r.x)*π^3
+            @test (@inferred r*p) === PiExpTimes(p.x*r.x, 3) ≈ (p.x*r.x)*π^3
         end
         @testset "Real" begin
             @testset "Int" begin
@@ -247,10 +247,10 @@ end
                 @test 2 * PiExpTimes(3, 0) == 6
             end
             @testset "Bool" begin
-                @test true*p === p
-                @test p*true === p
-                @test false*p === zero(p)
-                @test p*false === zero(p)
+                @test (@inferred true*p) === p
+                @test (@inferred p*true) === p
+                @test (@inferred false*p) === zero(p)
+                @test (@inferred p*false) === zero(p)
 
                 @test PiExpTimes(3, 0) * true == 3
                 @test PiExpTimes(3, 0) * false == 0
@@ -262,8 +262,8 @@ end
                 @test -3.0Pi * false === false * (-3.0Pi)
             end
             @testset "float" begin
-                @test p*1/p == 1.0
-                @test r*1/r == 1.0
+                @test (@inferred p*1/p) == 1.0
+                @test (@inferred r*1/r) == 1.0
 
                 @test 2.3*p === (2.3*p.x)*Pi
 
@@ -276,8 +276,8 @@ end
 
         @testset "Complex" begin
             @testset "Complex{Bool}" begin
-                @test p * im === (0)*Pi + (p.x)*Pi*im
-                @test im* p === (0)*Pi + (p.x)*Pi*im
+                @test (@inferred p * im) === (0)*Pi + (p.x)*Pi*im
+                @test (@inferred im* p) === (0)*Pi + (p.x)*Pi*im
                 @test Complex(true,false)*Pi === Pi + im*zero(Pi)
                 @test Complex(false,true)*Pi === zero(Pi) + im*Pi
                 @test Pi*Complex(false,true) === zero(Pi) + im*Pi
@@ -390,37 +390,39 @@ end
         end
 
         @testset "Float64 exponent" begin
-            @test float(Pi^2.0) === pi^2.0
-            @test float(Pi^-2.0) === pi^-2.0
-            @test Pi^0.0 == 1.0
+            @test float(@inferred Pi^2.0) === pi^2.0
+            @test float(@inferred Pi^-2.0) === pi^-2.0
+            @test (@inferred Pi^0.0) == 1.0
         end
 
         @testset "Irrational exponent" begin
             for T in [Float64, BigFloat]
-                @test T(Pi^Pi) == T(pi)^pi
-                @test T(Pi^π) == T(pi)^pi
-                @test T(π^Pi) == T(pi)^pi
+                @test T(@inferred Pi^Pi) == T(pi)^pi
+                @test T(@inferred Pi^π) == T(pi)^pi
+                @test T(@inferred π^Pi) == T(pi)^pi
             end
         end
 
         @testset "Rational exponent" begin
-            @test Float64(Pi^(3//4)) == pi^(3//4)
+            @test Float64(@inferred Pi^(3//4)) == pi^(3//4)
         end
 
         @testset "Pi as exponent" begin
-            @test 1^Pi == 1
-            @test 2^Pi == 2^π
-            @test 2.0^Pi == 2.0^π
-            @test 2.0^(1.0Pi) == 2.0^(1.0*π)
-            @test big(2)^Pi == big(2)^π
-            @test big(2.0)^Pi == big(2.0)^π
+            @test (@inferred 1^Pi) == 1
+            @test (@inferred 2^Pi) == 2^π
+            @test (@inferred 2.0^Pi) == 2.0^π
+            @test (@inferred 2.0^(1.0Pi)) == 2.0^(1.0*π)
+            @test (@inferred big(2)^Pi) == big(2)^π
+            @test (@inferred big(2.0)^Pi) == big(2.0)^π
         end
 
         @testset "reciprocal" begin
-            @test Pi * Pi^-1 == 1.0
-            @test Pi^-1 * Pi == 1.0
-            @test 2Pi * Pi^-1 == 2.0
-            @test 2Pi^2 * Pi^-2 == 2.0
+            @test (@inferred Pi * Pi^-1)== 1.0
+            @test (@inferred Pi^-1 * Pi)== 1.0
+            @test (@inferred Pi^-1.0 * Pi)== 1.0
+            @test (@inferred 2Pi * Pi^-1)== 2.0
+            @test (@inferred 2Pi^2 * Pi^-2) == 2.0
+            @test (@inferred 2Pi^2.0 * Pi^-2) == 2.0
         end
     end
 
@@ -496,6 +498,7 @@ end
     @testset "Irrational" begin
         @testset "pi" begin
             @test Pi + π == 2Pi
+            @test Pi^1.0 + π == 2Pi
             @test π + Pi == 2Pi
             @test Pi - π == zero(Pi) == 0
             @test π - Pi == zero(Pi) == 0

@@ -155,7 +155,7 @@ Base.signbit(p::PiExpTimes) = signbit(p.x)
 # Define trigonometric functions
 
 # this is type-unstable, but Union splitting does its magic
-@inline dividebypiexp(p::PiExpTimes, n) = p.n == n ? p.x : p.x * float(π)^(p.n-n)
+@inline dividebypiexp(p::PiExpTimes, n) = p.n == n ? p.x : p.x * π^float(p.n-n)
 @inline dividebypi(p) = dividebypiexp(p, 1)
 
 @inline _check_exp_apply(f, fzeroexp, p) = iszero(p.n) ? fzeroexp(p.x) : f(dividebypi(p))
