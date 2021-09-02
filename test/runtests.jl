@@ -387,6 +387,8 @@ end
             end
 
             @test (Pi^2)^0 == 1
+
+            @test float(Pi^big(10000)) == BigFloat(pi)^10000
         end
 
         @testset "Float64 exponent" begin

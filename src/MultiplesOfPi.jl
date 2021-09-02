@@ -110,7 +110,7 @@ Base.promote_rule(::Type{PiExpTimes{T,N}}, ::Type{PiExpTimes{S,M}}) where {T,S,N
 
 Base.promote_rule(::Type{PiExpTimes{T,N}}, ::Type{Complex{S}}) where {T<:Real,S<:Real,N} = Complex{PiExpTimes{promote_type(T, S),N}}
 
-Base.AbstractFloat(p::PiExpTimes{T}) where {T} = promote_type(T,Float64)(p)
+Base.AbstractFloat(p::PiExpTimes{T,N}) where {T,N} = promote_type(T,N,Float64)(p)
 
 for T in (:Float64,:Float32,:Float16)
 	@eval begin
