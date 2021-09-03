@@ -2,14 +2,16 @@ using MultiplesOfPi
 using Test
 
 @testset "Constructor" begin
-    @test (1)*Pi ≈ π
-    @test (1.5)*Pi ≈ 1.5*pi
-    @test (1//2)*Pi ≈ π/2
+    @test (@inferred (1)*Pi) ≈ π
+    @test (@inferred (1.5)*Pi) ≈ 1.5*pi
+    @test (@inferred (1//2)*Pi) ≈ π/2
 
     @test (1)*Pi === Pi
     @test Pi == π
     @test π == Pi
     @test 2π ≈ 2Pi
+
+    @test float(Pi^0.5) == sqrt(pi)
 
     @testset "nested" begin
         @test PiExpTimes{PiExpTimes{Int}}(3, 0) == 3
@@ -53,6 +55,8 @@ using Test
     @test PiExpTimes(PiExpTimes(1, 3), 2) === Pi^5
 
     @test float(PiExpTimes(2, 2)) === 2*pi*pi
+
+    @test float(PiExpTimes(BigFloat(2)^10000)) isa BigFloat
 end
 
 @testset "Ordering" begin
@@ -138,7 +142,9 @@ end
 @testset "zero and one" begin
     @testset "one" begin
         for T in (Float16,Float32,Float64,Int8,Int16,Int32,Int64,Int128,BigInt,BigFloat)
-            @test one(PiExpTimes{T}) == 1
+            @test one(PiExpTimes{T,Int}) == 1
+            @test one(PiExpTimes{T,Float64}) == 1
+            @test one(PiExpTimes{T,T}) == 1
             @test one(PiExpTimes(zero(T))) == 1
         end
 
@@ -155,12 +161,15 @@ end
         @test zero(Pi^2) + Pi^2 == Pi^2
 
         for T in (Float16,Float32,Float64,Int8,Int16,Int32,Int64,Int128)
-            @test zero(PiExpTimes{T}) isa PiExpTimes{T}
+            @test zero(PiExpTimes{T,Int}) isa PiExpTimes{T,Int}
+            @test zero(PiExpTimes{T,Float64}) isa PiExpTimes{T,Float64}
+            @test zero(PiExpTimes{T,T}) isa PiExpTimes{T,T}
             @test zero(PiExpTimes{T}(1)) isa PiExpTimes{T}
             @test zero(PiExpTimes{T}(1)) == 0
         end
         for T in (BigInt,BigFloat)
-            @test zero(PiExpTimes{T}) isa PiExpTimes{T}
+            @test zero(PiExpTimes{T,Int}) isa PiExpTimes{T,Int}
+            @test zero(PiExpTimes{T,BigInt}) isa PiExpTimes{T,BigInt}
             @test zero(PiExpTimes{T}(1)) isa PiExpTimes{T}
             @test zero(PiExpTimes{T}(1)) == 0
         end
@@ -219,13 +228,13 @@ end
 
     @testset "multiplication" begin
         @testset "PiTimes" begin
-            @test p*p === PiExpTimes(p.x^2, 2)
-            @test p*p ≈ (p.x*π)^2
-            @test p*q === PiExpTimes(p.x*q.x, 2)
-            @test q*p === PiExpTimes(p.x*q.x, 2)
-            @test p*q ≈ (p.x*q.x)*π^2
-            @test p*r === PiExpTimes(p.x*r.x, 3) ≈ (p.x*r.x)*π^3
-            @test r*p === PiExpTimes(p.x*r.x, 3) ≈ (p.x*r.x)*π^3
+            @test (@inferred p*p) === PiExpTimes(p.x^2, 2)
+            @test (@inferred p*p) ≈ (p.x*π)^2
+            @test (@inferred p*q) === PiExpTimes(p.x*q.x, 2)
+            @test (@inferred q*p) === PiExpTimes(p.x*q.x, 2)
+            @test (@inferred p*q) ≈ (p.x*q.x)*π^2
+            @test (@inferred p*r) === PiExpTimes(p.x*r.x, 3) ≈ (p.x*r.x)*π^3
+            @test (@inferred r*p) === PiExpTimes(p.x*r.x, 3) ≈ (p.x*r.x)*π^3
         end
         @testset "Real" begin
             @testset "Int" begin
@@ -238,10 +247,10 @@ end
                 @test 2 * PiExpTimes(3, 0) == 6
             end
             @testset "Bool" begin
-                @test true*p === p
-                @test p*true === p
-                @test false*p === zero(p)
-                @test p*false === zero(p)
+                @test (@inferred true*p) === p
+                @test (@inferred p*true) === p
+                @test (@inferred false*p) === zero(p)
+                @test (@inferred p*false) === zero(p)
 
                 @test PiExpTimes(3, 0) * true == 3
                 @test PiExpTimes(3, 0) * false == 0
@@ -253,8 +262,8 @@ end
                 @test -3.0Pi * false === false * (-3.0Pi)
             end
             @testset "float" begin
-                @test p*1/p == 1.0
-                @test r*1/r == 1.0
+                @test (@inferred p*1/p) == 1.0
+                @test (@inferred r*1/r) == 1.0
 
                 @test 2.3*p === (2.3*p.x)*Pi
 
@@ -267,8 +276,8 @@ end
 
         @testset "Complex" begin
             @testset "Complex{Bool}" begin
-                @test p * im === (0)*Pi + (p.x)*Pi*im
-                @test im* p === (0)*Pi + (p.x)*Pi*im
+                @test (@inferred p * im) === (0)*Pi + (p.x)*Pi*im
+                @test (@inferred im* p) === (0)*Pi + (p.x)*Pi*im
                 @test Complex(true,false)*Pi === Pi + im*zero(Pi)
                 @test Complex(false,true)*Pi === zero(Pi) + im*Pi
                 @test Pi*Complex(false,true) === zero(Pi) + im*Pi
@@ -378,25 +387,44 @@ end
             end
 
             @test (Pi^2)^0 == 1
+
+            @test float(Pi^big(10000)) == BigFloat(pi)^10000
         end
 
         @testset "Float64 exponent" begin
-            @test Pi^2.0 === pi^2.0
-            @test Pi^-2.0 === pi^-2.0
-            @test Pi^0.0 == 1.0
+            @test float(@inferred Pi^2.0) === pi^2.0
+            @test float(@inferred Pi^-2.0) === pi^-2.0
+            @test (@inferred Pi^0.0) == 1.0
         end
 
         @testset "Irrational exponent" begin
-            @test Pi^Pi === pi^pi
-            @test Pi^π === pi^pi
-            @test π^Pi === pi^pi
+            for T in [Float64, BigFloat]
+                @test T(@inferred Pi^Pi) == T(pi)^pi
+                @test T(@inferred Pi^π) == T(pi)^pi
+                @test T(@inferred π^Pi) == T(pi)^pi
+            end
+        end
+
+        @testset "Rational exponent" begin
+            @test Float64(@inferred Pi^(3//4)) == pi^(3//4)
+        end
+
+        @testset "Pi as exponent" begin
+            @test (@inferred 1^Pi) == 1
+            @test (@inferred 2^Pi) == 2^π
+            @test (@inferred 2.0^Pi) == 2.0^π
+            @test (@inferred 2.0^(1.0Pi)) == 2.0^(1.0*π)
+            @test (@inferred big(2)^Pi) == big(2)^π
+            @test (@inferred big(2.0)^Pi) == big(2.0)^π
         end
 
         @testset "reciprocal" begin
-            @test Pi * Pi^-1 == 1.0
-            @test Pi^-1 * Pi == 1.0
-            @test 2Pi * Pi^-1 == 2.0
-            @test 2Pi^2 * Pi^-2 == 2.0
+            @test (@inferred Pi * Pi^-1)== 1.0
+            @test (@inferred Pi^-1 * Pi)== 1.0
+            @test (@inferred Pi^-1.0 * Pi)== 1.0
+            @test (@inferred 2Pi * Pi^-1)== 2.0
+            @test (@inferred 2Pi^2 * Pi^-2) == 2.0
+            @test (@inferred 2Pi^2.0 * Pi^-2) == 2.0
         end
     end
 
@@ -472,6 +500,7 @@ end
     @testset "Irrational" begin
         @testset "pi" begin
             @test Pi + π == 2Pi
+            @test Pi^1.0 + π == 2Pi
             @test π + Pi == 2Pi
             @test Pi - π == zero(Pi) == 0
             @test π - Pi == zero(Pi) == 0
@@ -485,20 +514,17 @@ end
             @test Pi*Pi/π == Pi
             @test Pi*π/Pi == (one(Float64))*Pi
             @test Pi*π/Pi == Pi == pi
-            @test Pi^π == π^π
-            @test π^Pi == π^π
         end
         @testset "e" begin
-            @test Pi + ℯ === π + ℯ
-            @test ℯ + Pi === ℯ + π
-            @test Pi - ℯ === π - ℯ
-            @test ℯ - Pi === ℯ - π
-            @test ℯ*Pi === ℯ*π
-            @test Pi*ℯ === π*ℯ
-            @test Pi/ℯ === π/ℯ
-            @test ℯ/Pi === ℯ/π
-            @test Pi^ℯ === π^ℯ
-            @test ℯ^Pi === ℯ^π
+            @test Pi + ℯ == π + ℯ
+            @test ℯ + Pi == ℯ + π
+            @test Pi - ℯ == π - ℯ
+            @test ℯ - Pi == ℯ - π
+            @test ℯ*Pi == ℯ*π
+            @test Pi*ℯ == π*ℯ
+            @test Pi/ℯ == π/ℯ
+            @test ℯ/Pi == ℯ/π
+            @test float(Pi^ℯ) == pi^ℯ
         end
     end
 end
@@ -649,28 +675,29 @@ end
 end
 
 @testset "Inf NaN zero check" begin
-    @testset "PiTimes" begin
-        @test isinf((Inf)*Pi)
-        @test !isfinite((Inf)*Pi)
-        @test isfinite(Pi)
-        @test isnan((NaN)*Pi)
-        @test iszero((0)*Pi)
-    end
-    @testset "PiExpTimes" begin
-        @test isinf(PiExpTimes(Inf, 2))
-        @test isinf(PiExpTimes(Inf, 0))
-        @test isinf(PiExpTimes(Inf, -1))
+    @test isinf((Inf)*Pi)
+    @test !isfinite((Inf)*Pi)
+    @test isfinite(Pi)
+    @test !isfinite(PiExpTimes(Inf, 2))
+    @test !isfinite(PiExpTimes(Inf, 0))
+    @test !isfinite(PiExpTimes(Inf, -1))
+    @test isinf(PiExpTimes(Inf, 2))
+    @test isinf(PiExpTimes(Inf, 0))
+    @test isinf(PiExpTimes(Inf, -1))
+    @test isinf(PiExpTimes(1,Inf))
+    @test isfinite(PiExpTimes(1,-Inf))
 
-        @test !isfinite(PiExpTimes(Inf, 2))
-        @test !isfinite(PiExpTimes(Inf, 0))
-        @test !isfinite(PiExpTimes(Inf, -1))
+    @test isnan((NaN)*Pi)
+    @test isnan(PiExpTimes(1,NaN))
+    @test isnan(PiExpTimes(NaN,1))
+    @test isnan(PiExpTimes(NaN,NaN))
+    @test isnan(PiExpTimes(0, Inf))
 
-        @test isnan(PiExpTimes(NaN, -1))
-        @test isnan(PiExpTimes(NaN, 0))
-
-        @test iszero(PiExpTimes(0, 2))
-        @test iszero(PiExpTimes(0, 0))
-    end
+    @test iszero((0)*Pi)
+    @test iszero(PiExpTimes(0, 2))
+    @test iszero(PiExpTimes(0, 0))
+    @test iszero(Pi^-Inf)
+    @test !iszero(PiExpTimes(0, NaN))
 end
 
 @testset "show" begin
@@ -724,5 +751,10 @@ end
             @test repr(Pi + im*(2//3)Pi) == "(1//1)Pi + (2//3)Pi*im"
             @test repr(Pi*Pi*(2//3)*im) == "0//1 + (2//3)Pi^2*im"
         end
+    end
+
+    @testset "non-finite" begin
+        @test repr(Pi^NaN) == repr(NaN)
+        @test repr(Pi^Inf) == repr(Inf)
     end
 end

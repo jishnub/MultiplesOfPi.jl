@@ -8,14 +8,7 @@
 
 # Introduction
 
-This package exports the type `PiExpTimes` that satisfies `PiExpTimes(x, n) = x*π^n`. It also provides the constant `Pi` for convenience, defined as `PiExpTimes(1, 1)`, that behaves like `π` except it produces results with higher accuracy in certain trigonometric and algebraic contexts. In most scenarios the numbers `Pi` and `π` are interchangable.
-
-```julia
-julia> Pi^2 == π^2
-true
-```
-
-Expressing mathematical relations in terms of `Pi` instead of the more cumbersome `PiExpTimes` is usually cleaner, and is recommended unless it's specifically necessary to do otherwise. One such scenario is exponentiation, more on which is presented below.
+This package exports the type `PiExpTimes` that satisfies `PiExpTimes(x, n) = x*π^n`. It also provides the constant `Pi` for convenience, defined as `PiExpTimes(1, 1)`, that behaves like `π` except it produces results with higher accuracy in certain trigonometric and algebraic contexts. In most scenarios the numbers `Pi` and `π` are interchangable. Expressing mathematical relations in terms of `Pi` instead of the more cumbersome `PiExpTimes` is usually cleaner, and is recommended unless it's specifically necessary to do otherwise.
 
 ## Rationale
 

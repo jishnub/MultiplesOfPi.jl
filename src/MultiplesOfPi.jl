@@ -16,25 +16,26 @@ julia> PiExpTimes(2, 3)
 
 See also: [`Pi`](@ref)
 """
-struct PiExpTimes{T<:Real} <: AbstractIrrational
+struct PiExpTimes{T<:Real,N<:Real} <: AbstractIrrational
 	x :: T
-	n :: Int
-
-	PiExpTimes{T}(x::T, n::Int) where {T<:Real} = new(x, n)
-	PiExpTimes{PiExpTimes{T}}(p::PiExpTimes{T}, n::Int) where {T<:Real} = new(p, n)
-	PiExpTimes{PiExpTimes}(p::PiExpTimes, n::Int) = new(p, n)
-	PiExpTimes{Irrational{:π}}(p::Irrational{:π}, n::Int) = new(p, n)
+	n :: N
 end
 
-PiExpTimes{T}(x::Real, n::Int) where {T<:Real} = PiExpTimes{T}(T(x), n)
-PiExpTimes{T}(::Irrational{:π}, n::Int) where {T<:Real} = PiExpTimes{T}(T(1), n + 1)
-PiExpTimes{T}(p::PiExpTimes, n::Int) where {T<:Real} = PiExpTimes{T}(p.x, p.n + n)
-PiExpTimes{T}(x::Real, n::Integer = 0) where {T<:Real} = PiExpTimes{T}(x, Int(n))
+PiExpTimes{T,N}(x::Real) where {T,N} = PiExpTimes{T,N}(T(x), zero(N))
+PiExpTimes{T,N}(p::PiExpTimes{S}) where {T,S,N} = PiExpTimes{T,N}(T(p.x), N(p.n))
 
-PiExpTimes(::Irrational{:π}, n::Integer = 0) = PiExpTimes{Int}(1, Int(n) + 1)
-PiExpTimes(x::Real, n::Integer = 0) = PiExpTimes{typeof(x)}(x, Int(n))
+PiExpTimes{PiExpTimes{T}}(p::PiExpTimes{T}, n::Real) where {T<:Real} = PiExpTimes{PiExpTimes{T}, typeof(n)}(p, n)
+PiExpTimes{PiExpTimes}(p::PiExpTimes, n::Real) = PiExpTimes{PiExpTimes, typeof(n)}(p, n)
+PiExpTimes{Irrational{:π}}(p::Irrational{:π}, n::Real) = PiExpTimes{Irrational{:π}, typeof(n)}(p, n)
+
+PiExpTimes{T}(x::Real, n::Real = 0) where {T<:Real} = PiExpTimes{T,typeof(n)}(T(x), n)
+PiExpTimes{T}(::Irrational{:π}, n::Real) where {T<:Real} = PiExpTimes{T,typeof(n)}(T(1), n + 1)
+PiExpTimes{T}(p::PiExpTimes, n::Real) where {T<:Real} = PiExpTimes{T,typeof(n)}(p.x, p.n + n)
+
+PiExpTimes(::Irrational{:π}, n::Real = 0) = PiExpTimes{Int}(1, n + one(n))
 # avoid nesting
-PiExpTimes(p::PiExpTimes, n::Integer = 0) = PiExpTimes(p.x, p.n + n)
+PiExpTimes(p::PiExpTimes, n::Real = 0) = PiExpTimes(p.x, p.n + n)
+PiExpTimes(x::Real) = PiExpTimes(x, 0)
 
 """
 	Pi
@@ -86,6 +87,7 @@ Base.:(==)(p::PiExpTimes, x::Real) = p == PiExpTimes(x, 0)
 Base.:(==)(x::Real, p::PiExpTimes) = p == x
 
 simplify(p) = p
+simplify(p::PiExpTimes{Irrational{:π}}) = PiExpTimes(1, p.n + one(p.n))
 simplify(p::PiExpTimes{<:PiExpTimes}) = simplify(p.x) * Pi^(p.n)
 
 for f in [:(<), :(==)]
@@ -93,29 +95,31 @@ for f in [:(<), :(==)]
 	@eval Base.$f(::Irrational{:π}, p::PiExpTimes) = $f(Pi, p)
 end
 
-Base.promote_rule(::Type{Irrational{:π}}, ::Type{PiExpTimes{T}}) where {T} = PiExpTimes{T}
-Base.promote_rule(::Type{PiExpTimes{T}}, ::Type{Irrational{:π}}) where {T} = PiExpTimes{T}
+Base.promote_rule(::Type{Irrational{:π}}, ::Type{PiExpTimes{T,N}}) where {T,N} = PiExpTimes{T,N}
+Base.promote_rule(::Type{PiExpTimes{T,N}}, ::Type{Irrational{:π}}) where {T,N} = PiExpTimes{T,N}
 
-Base.promote_rule(::Type{PiExpTimes{T}}, ::Type{Bool}) where {T} = PiExpTimes{T}
-Base.promote_rule(::Type{PiExpTimes{T}}, ::Type{S}) where {T,S<:AbstractIrrational} = PiExpTimes{promote_type(S,T)}
-Base.promote_rule(::Type{PiExpTimes{T}}, ::Type{S}) where {T,S<:Real} = PiExpTimes{promote_type(S,T)}
-Base.promote_rule(::Type{PiExpTimes{T}}, ::Type{Float16}) where {T} = PiExpTimes{promote_type(Float16,T)}
-Base.promote_rule(::Type{PiExpTimes{T}}, ::Type{Float32}) where {T} = PiExpTimes{promote_type(Float32,T)}
+Base.promote_rule(::Type{PiExpTimes{T,N}}, ::Type{Bool}) where {T,N} = PiExpTimes{T,N}
+Base.promote_rule(::Type{PiExpTimes{T,N}}, ::Type{S}) where {T,S<:AbstractIrrational,N} = PiExpTimes{promote_type(S,T),N}
+Base.promote_rule(::Type{PiExpTimes{T,N}}, ::Type{S}) where {T,S<:Real,N} = PiExpTimes{promote_type(S,T),N}
+Base.promote_rule(::Type{PiExpTimes{T,N}}, ::Type{Float16}) where {T,N} = PiExpTimes{promote_type(Float16,T),N}
+Base.promote_rule(::Type{PiExpTimes{T,N}}, ::Type{Float32}) where {T,N} = PiExpTimes{promote_type(Float32,T),N}
 
-Base.promote_rule(::Type{PiExpTimes{T}}, ::Type{PiExpTimes{S}}) where {T,S} = PiExpTimes{promote_type(T, S)}
+Base.promote_rule(::Type{BigFloat}, ::Type{PiExpTimes{T,N}}) where {T,N} = PiExpTimes{promote_type(BigFloat,T),N}
 
-Base.promote_rule(::Type{PiExpTimes{T}}, ::Type{Complex{S}}) where {T<:Real,S<:Real} = Complex{PiExpTimes{promote_type(T, S)}}
+Base.promote_rule(::Type{PiExpTimes{T,N}}, ::Type{PiExpTimes{S,M}}) where {T,S,N,M} = PiExpTimes{promote_type(T, S),promote_type(M, N)}
+
+Base.promote_rule(::Type{PiExpTimes{T,N}}, ::Type{Complex{S}}) where {T<:Real,S<:Real,N} = Complex{PiExpTimes{promote_type(T, S),N}}
+
+Base.AbstractFloat(p::PiExpTimes{T,N}) where {T,N} = promote_type(T,N,Float64)(p)
 
 for T in (:Float64,:Float32,:Float16)
 	@eval begin
 		function Base.$T(p::PiExpTimes)
 			n = p.n
-			if n == 0
+			if iszero(n)
 				return $T(p.x)
-			elseif n > 0
-				return $T(p.x*π^n)
 			else
-				return $T(p.x*inv(float(π))^-n)
+				return $T(p.x*float(pi)^n)
 			end
 		end
 	end
@@ -125,26 +129,25 @@ end
 # Convert π to BigFloat before multiplying
 function Base.BigFloat(p::PiExpTimes)
 	n = p.n
-	if n == 0
+	if iszero(n)
 		return BigFloat(p.x)
-	elseif n > 0
-		return BigFloat(p.x)*BigFloat(π)^n
 	else
-		return BigFloat(p.x)*inv(BigFloat(π))^-n
+		return BigFloat(p.x*BigFloat(π)^n)
 	end
 end
 
-for f in (:iszero, :isfinite, :isnan)
-	@eval Base.$f(p::PiExpTimes) = $f(p.x)
-end
+Base.iszero(p::PiExpTimes{<:Real,Int}) = iszero(p.x)
+Base.iszero(p::PiExpTimes) = iszero(float(p))
+Base.isfinite(p::PiExpTimes) = isfinite(float(p))
+Base.isnan(p::PiExpTimes) = isnan(float(p))
 
 # Unfortunately Irrational numbers do not have a multiplicative identity of the same type,
 # so we make do with something that works
-Base.one(::Type{PiExpTimes}) = true
+Base.one(::Type{<:PiExpTimes}) = true
 Base.isone(p::PiExpTimes) = (x = simplify(p); isone(x.x) && iszero(x.n))
 
-Base.zero(p::PiExpTimes{T}) where {T} = PiExpTimes{T}(zero(T), p.n)
-Base.zero(::Type{PiExpTimes{T}}) where {T} = PiExpTimes{T}(zero(T))
+Base.zero(p::PiExpTimes{T,N}) where {T,N} = PiExpTimes{T,N}(zero(T), p.n)
+Base.zero(::Type{PiExpTimes{T,N}}) where {T,N} = PiExpTimes{T,N}(zero(T), zero(N))
 
 Base.sign(p::PiExpTimes) = sign(p.x)
 Base.signbit(p::PiExpTimes) = signbit(p.x)
@@ -152,13 +155,15 @@ Base.signbit(p::PiExpTimes) = signbit(p.x)
 # Define trigonometric functions
 
 # this is type-unstable, but Union splitting does its magic
-@inline dividebypiexp(p::PiExpTimes, n) = p.n == n ? p.x : p.x * float(π)^(p.n-n)
+@inline dividebypiexp(p::PiExpTimes, n) = p.n == n ? p.x : p.x * π^float(p.n-n)
 @inline dividebypi(p) = dividebypiexp(p, 1)
 
-Base.sin(p::PiExpTimes) = p.n == 0 ? sin(p.x) : sinpi(dividebypi(p))
-Base.cos(p::PiExpTimes) = p.n == 0 ? cos(p.x) : cospi(dividebypi(p))
+@inline _check_exp_apply(f, fzeroexp, p) = iszero(p.n) ? fzeroexp(p.x) : f(dividebypi(p))
+Base.sin(p::PiExpTimes) = _check_exp_apply(sinpi, sin, p)
+# Base.sin(p::PiExpTimes) = iszero(p.n) ? sin(p.x) : sinpi(dividebypi(p))
+Base.cos(p::PiExpTimes) = _check_exp_apply(cospi, cos, p)
 if VERSION > v"1.6.0"
-	Base.sincos(p::PiExpTimes) = p.n == 0 ? sincos(p.x) : sincospi(dividebypi(p))
+	Base.sincos(p::PiExpTimes) = _check_exp_apply(sincospi, sincos, p)
 else
 	Base.sincos(p::PiExpTimes) = (sin(p),cos(p))
 end
@@ -170,7 +175,7 @@ end
 
 @inline function Base.tan(p::PiExpTimes{T}) where {T}
 	Tf = float(T)
-	if simplify(p).n == 1
+	if isone(simplify(p).n)
 		r = abs(rem(p.x, one(p.x)))
 		iszero(r) && return copysign(zero(Tf), p.x)
 		2r == one(r) && return copysign(Tf(Inf), p.x)
@@ -224,7 +229,15 @@ end
 Base.:(*)(b::Bool, p::PiExpTimes) = ifelse(b, p, flipsign(zero(p), p.x))
 Base.:(/)(b::Bool, p::PiExpTimes) = PiExpTimes(b / p.x, -p.n)
 
-Base.:(^)(p::PiExpTimes, n::Integer) = PiExpTimes(p.x^n, n*p.n)
+Base.:(^)(p::PiExpTimes, q::PiExpTimes) = PiExpTimes(float(p.x)^oftype(float(p.x), q), q*p.n)
+Base.:(^)(::Irrational{:π}, p::PiExpTimes) = Pi^p
+Base.:(^)(p::PiExpTimes, ::Irrational{:π}) = PiExpTimes(p.x^π, Pi*p.n)
+_default_exp(p, n) = PiExpTimes(p.x^n, n*p.n)
+# These methods need to be defined to handle ambiguities
+Base.:(^)(p::PiExpTimes, n::AbstractIrrational) = _default_exp(p, n)
+Base.:(^)(p::PiExpTimes, n::Rational) = _default_exp(p, n)
+Base.:(^)(p::PiExpTimes, n::Integer) = _default_exp(p, n)
+Base.:(^)(p::PiExpTimes, n::Real) = _default_exp(p, n)
 
 # Rational divide
 Base.:(//)(p::PiExpTimes, q::PiExpTimes) = PiExpTimes(p.x//q.x, p.n - q.n)
@@ -236,6 +249,10 @@ Base.:(//)(::Irrational{:π}, p::PiExpTimes) = PiExpTimes(1//p.x, -p.n+1)
 # Pretty-printing
 
 function Base.show(io::IO, p::PiExpTimes)
+	if !isfinite(p)
+		print(io, float(p))
+		return
+	end
 	x = p.x
 
 	expstr(p) = isone(p.n) ? "Pi" : "Pi^"*string(p.n)
