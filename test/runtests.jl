@@ -11,7 +11,7 @@ using Test
     @test π == Pi
     @test 2π ≈ 2Pi
 
-    @test float(Pi^0.5) == sqrt(pi)
+    @test float(Pi^0.5) == pi^0.5
 
     @testset "nested" begin
         @test PiExpTimes{PiExpTimes{Int}}(3, 0) == 3
