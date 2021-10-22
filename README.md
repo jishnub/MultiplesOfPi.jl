@@ -26,6 +26,12 @@ false
 
 julia> (1//3)Pi + (4//3)Pi == (5//3)Pi
 true
+
+julia> float(sqrt(pi)^2) == float(pi)
+false
+
+julia> float(sqrt(Pi)^2) == float(Pi)
+true
 ```
 
 We may also simplify algebraic expressions involving powers of `Pi` as
@@ -137,6 +143,12 @@ Note that `π` is promoted to `Pi` in such operations, so we obtain
 julia> Pi + π
 2Pi
 ```
+
+Note that addition and subtraction are not type-stable at present by design.
+
+# Performance
+
+In general using `Pi` instead of `pi` will be less performant, as `pi` is aggressively promoted to a floating-point value in most calculations. The use of `Pi` is mainly intended for tests where exact fractions of `Pi` are desirable.
 
 # Installation
 

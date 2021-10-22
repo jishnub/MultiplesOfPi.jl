@@ -1,13 +1,19 @@
 name = "MultiplesOfPi"
 uuid = "b749d01f-fee9-4313-9f11-89ddf7ea9d58"
 authors = ["Jishnu Bhattacharya", "Center for Space Science", "New York University Abu Dhabi"]
-version = "0.5.1"
+version = "0.5.2"
+
+[deps]
+FastRationals = "275e499e-7a09-5551-a1d1-9fe535a2b717"
 
 [compat]
+Aqua = "0.5"
+FastRationals = "0.2"
 julia = "1"
 
 [extras]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["Aqua", "Test"]
