@@ -402,9 +402,11 @@ end
             for T in [Float64, BigFloat]
                 @test T(sqrt(Pi)^2) == T(Pi)
                 @test T(sqrt(Pi^2)) == T(Pi)
+                @test T(sqrt(Pi^2.0)) == T(Pi)
                 @test T(sqrt(Pi^(2//1))) == T(Pi)
                 @test T(cbrt(Pi)^3) == T(Pi)
                 @test T(cbrt(Pi^3)) == T(Pi)
+                @test T(cbrt(Pi^3.0)) == T(Pi)
                 @test T(cbrt(Pi^(3//1))) == T(Pi)
             end
         end
