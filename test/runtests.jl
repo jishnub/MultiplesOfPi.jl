@@ -11,7 +11,7 @@ using Test
     @test π == Pi
     @test 2π ≈ 2Pi
 
-    @test float(Pi^0.5) == sqrt(pi)
+    @test float(Pi^0.5) == pi^0.5
 
     @testset "nested" begin
         @test PiExpTimes{PiExpTimes{Int}}(3, 0) == 3
@@ -395,6 +395,20 @@ end
             @test float(@inferred Pi^2.0) === pi^2.0
             @test float(@inferred Pi^-2.0) === pi^-2.0
             @test (@inferred Pi^0.0) == 1.0
+            @test float(@inferred Pi^0.5) == float(@inferred sqrt(Pi))
+            @test BigFloat(@inferred Pi^0.5) == BigFloat(@inferred sqrt(Pi))
+            @test float(@inferred Pi^(1//3)) == float(@inferred cbrt(Pi))
+            @test BigFloat(@inferred Pi^(1//3)) == BigFloat(@inferred cbrt(Pi))
+            for T in [Float64, BigFloat]
+                @test T(sqrt(Pi)^2) == T(Pi)
+                @test T(sqrt(Pi^2)) == T(Pi)
+                @test T(sqrt(Pi^2.0)) == T(Pi)
+                @test T(sqrt(Pi^(2//1))) == T(Pi)
+                @test T(cbrt(Pi)^3) == T(Pi)
+                @test T(cbrt(Pi^3)) == T(Pi)
+                @test T(cbrt(Pi^3.0)) == T(Pi)
+                @test T(cbrt(Pi^(3//1))) == T(Pi)
+            end
         end
 
         @testset "Irrational exponent" begin

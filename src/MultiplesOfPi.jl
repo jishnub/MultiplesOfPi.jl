@@ -1,5 +1,7 @@
 module MultiplesOfPi
 
+using FastRationals: FastRational
+
 export PiExpTimes
 export Pi
 
@@ -245,6 +247,16 @@ Base.:(//)(p::PiExpTimes, y::Real) = PiExpTimes(p.x//y, p.n)
 Base.:(//)(p::PiExpTimes, ::Irrational{:π}) = PiExpTimes(p.x//1, p.n-1)
 Base.:(//)(y::Real, p::PiExpTimes) = PiExpTimes(y//p.x, -p.n)
 Base.:(//)(::Irrational{:π}, p::PiExpTimes) = PiExpTimes(1//p.x, -p.n+1)
+
+_half(n::Integer) = FastRational(n, 2)
+_half(n::Rational) = n//2
+_half(n) = n/2
+_third(n::Integer) = FastRational(n, 3)
+_third(n::Rational) = n//3
+_third(n) = n/3
+
+Base.sqrt(p::PiExpTimes) = PiExpTimes(sqrt(p.x), _half(p.n))
+Base.cbrt(p::PiExpTimes) = PiExpTimes(cbrt(p.x), _third(p.n))
 
 # Pretty-printing
 

@@ -1,7 +1,10 @@
 name = "MultiplesOfPi"
 uuid = "b749d01f-fee9-4313-9f11-89ddf7ea9d58"
 authors = ["Jishnu Bhattacharya", "Center for Space Science", "New York University Abu Dhabi"]
-version = "0.5.1"
+version = "0.5.2"
+
+[deps]
+FastRationals = "275e499e-7a09-5551-a1d1-9fe535a2b717"
 
 [compat]
 julia = "1"
