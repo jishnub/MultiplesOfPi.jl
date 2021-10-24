@@ -1,5 +1,10 @@
 using MultiplesOfPi
 using Test
+using Aqua
+
+@testset "project quality" begin
+    Aqua.test_all(MultiplesOfPi, ambiguities=false)
+end
 
 @testset "Constructor" begin
     @test (@inferred (1)*Pi) ≈ π
