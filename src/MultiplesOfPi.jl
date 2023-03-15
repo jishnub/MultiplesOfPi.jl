@@ -47,11 +47,11 @@ Using `Pi` instead of `pi` often produces results that avoid floating-point inac
 
 # Examples
 ```jldoctest
-julia> sin(Pi)
-0.0
+julia> sin(2Pi) == 0
+true
 
-julia> sin(π)
-1.2246467991473532e-16
+julia> sin(2π) == 0
+false
 
 julia> exp(im*Pi) + 1 == 0
 true
