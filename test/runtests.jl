@@ -124,6 +124,14 @@ end
     end
 end
 
+@testset "hash" begin
+    @test hash(0 * Pi) == hash(0)
+    @test hash(Pi) == hash(pi)
+    @test hash(PiExpTimes(3, 0)) == hash(3)
+    @test hash(4 * Pi ^ 2) == hash((2 * Pi) ^ 2)
+    @test unique(Any[pi, Pi, 0, 0 * pi, 3.0, 3 * Pi ^ 0]) == Any[pi, 0, 3]
+end
+
 @testset "sign" begin
     @testset "PiExpTimes" begin
         @testset "sign" begin

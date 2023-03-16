@@ -88,6 +88,13 @@ end
 Base.:(==)(p::PiExpTimes, x::Real) = p == PiExpTimes(x, 0)
 Base.:(==)(x::Real, p::PiExpTimes) = p == x
 
+function Base.hash(p::PiExpTimes, h::UInt)
+    iszero(p) && return hash(0, h)
+    iszero(p.n) && return hash(p.x, h)
+    p == Pi && return hash(pi, h)
+    return hash(p.x, hash(p.n, hash(:PiExpTimes, h)))
+end
+
 simplify(p) = p
 simplify(p::PiExpTimes{Irrational{:π}}) = PiExpTimes(1, p.n + one(p.n))
 simplify(p::PiExpTimes{<:PiExpTimes}) = simplify(p.x) * Pi^(p.n)
