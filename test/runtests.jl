@@ -38,6 +38,8 @@ end
         @test PiExpTimes{Real}(π).x === 1
 
         @test PiExpTimes{Irrational{:π}}(π, 2) == PiExpTimes(1, 3)
+
+        @test convert(typeof(Pi), pi) === Pi
     end
 
     @test PiExpTimes(1, -1) ≈ 1/π
