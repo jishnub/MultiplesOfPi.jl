@@ -230,6 +230,8 @@ function Base.:(/)(p1::PiExpTimes, p2::PiExpTimes)
 	PiExpTimes(p1.x/p2.x, p1.n-p2.n)
 end
 
+Base.convert(::Type{T}, ::Irrational{:π}) where {T<:PiExpTimes} = convert(T, Pi)
+
 for f in [:(+), :(-), :(*), :(/)]
 	@eval Base.$f(p::PiExpTimes, ::Irrational{:π}) = $f(p, Pi)
 	@eval Base.$f(::Irrational{:π}, p::PiExpTimes) = $f(Pi, p)
