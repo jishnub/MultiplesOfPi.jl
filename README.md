@@ -20,19 +20,27 @@ The number `π` is represented as an `Irrational` type in julia, and may be comp
 
 Delaying the conversion of `π` to a float results in precise mathematical expressions such as
 
-```julia
-julia> (1//3)π + (4//3)π == (5//3)π
-false
-
-julia> (1//3)Pi + (4//3)Pi == (5//3)Pi
-true
-
-julia> float(sqrt(pi)^2) == float(pi)
-false
-
-julia> float(sqrt(Pi)^2) == float(Pi)
-true
-```
+<table>
+<tr><th>Using <code>π</code></th><th>Using <code>Pi</code></th></tr>
+<tr><td>
+  
+  ```julia
+  julia> (1//3)π + (4//3)π == (5//3)π
+  false
+  
+  julia> float(sqrt(pi)^2) == float(pi)
+  false
+  ```
+</td><td>
+  
+  ```julia
+  julia> (1//3)Pi + (4//3)Pi == (5//3)Pi
+  true
+  
+  julia> float(sqrt(Pi)^2) == float(Pi)
+  true
+  ```
+</td></tr></table>
 
 We may also simplify algebraic expressions involving powers of `Pi` as
 
@@ -58,54 +66,83 @@ Pi^0 + Pi^0*im
 
 The type `PiTimes` uses `sinpi` and `cospi` under the hood when it is used as an argument to `sin` and `cos`. This results in exact results in several contexts where the inaccuracies arise from floating-point conversions.
 
-```julia
-julia> cos(3π/2)
--1.8369701987210297e-16
-
-julia> cos(3Pi/2)
-0.0
-
-julia> sin(-π)
--1.2246467991473532e-16
-
-julia> sin(-Pi)
--0.0
-
-julia> tan(π/2)
-1.633123935319537e16
-
-julia> tan(Pi/2)
-Inf
-```
+<table>
+<tr><th>Using <code>π</code></th><th>Using <code>Pi</code></th></tr>
+<tr><td>
+  
+  ```julia
+  julia> cos(3π/2)
+  -1.8369701987210297e-16
+  
+  julia> sin(-π)
+  -1.2246467991473532e-16
+  
+  julia> tan(π/2)
+  1.633123935319537e16
+  ```
+</td><td>
+  
+  ```julia
+  julia> cos(3Pi/2)
+  0.0
+  
+  julia> sin(-Pi)
+  -0.0
+  
+  julia> tan(Pi/2)
+  Inf
+  ```
+</td></tr></table>
 
 We may compute complex exponential exactly:
 
-```julia
-julia> exp(im*π/2)
-6.123233995736766e-17 + 1.0im
+<table>
+<tr><th>Using <code>π</code></th><th>Using <code>Pi</code></th></tr>
+<tr><td>
+  
+  ```julia
+  julia> exp(im*π/2)
+  6.123233995736766e-17 + 1.0im
+  
+  # Euler's identity : exp(iπ) + 1 == 0
+  julia> exp(im*π) + 1
+  0.0 + 1.2246467991473532e-16im
+  ```
+</td><td>
+  
+  ```julia
+  julia> exp(im*Pi/2)
+  0.0 + 1.0im
+  
+  # Euler's identity : exp(iπ) + 1 == 0
+  julia> exp(im*Pi) + 1
+  0.0 + 0.0im
+  ```
 
-julia> exp(im*Pi/2)
-0.0 + 1.0im
-
-# Euler's identity : exp(iπ) + 1 == 0
-julia> exp(im*π) + 1
-0.0 + 1.2246467991473532e-16im
-
-julia> exp(im*Pi) + 1
-0.0 + 0.0im
-```
+</td></tr></table>
 
 Hyperbolic functions work as expected:
 
-```julia
-# cosh(ix) = cos(x)
-# Should be exactly zero for x = π/2
-julia> cosh(im*π/2)
-6.123233995736766e-17 + 0.0im
+<table>
+<tr><th>Using <code>π</code></th><th>Using <code>Pi</code></th></tr>
+<tr><td>
+  
+  ```julia
+  # cosh(ix) = cos(x)
+  # Should be exactly zero for x = π/2
+  julia> cosh(im*π/2)
+  6.123233995736766e-17 + 0.0im
+  ```
+</td><td>
+  
+  ```julia
+  # cosh(ix) = cos(x)
+  # Should be exactly zero for x = π/2
+  julia> cosh(im*Pi/2)
+  0.0 + 0.0im
+  ```
 
-julia> cosh(im*Pi/2)
-0.0 + 0.0im
-```
+</td></tr></table>
 
 ### Interactions with π
 
