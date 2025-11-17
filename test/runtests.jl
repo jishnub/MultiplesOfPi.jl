@@ -495,7 +495,7 @@ end
             @testset "Complex{Int}" begin
                 @test Pi//(2im) === (0//1 - 1//2*im)*Pi
                 @test Pi^2//(2im) === (0//1 - 1//2*im)*Pi^2
-                @test Pi^-1//(2im) === (0//1 - 1//2*im)*Pi^-1
+                @test Pi^Int(-1)//(2im) === (0//1 - 1//2*im)*Pi^Int(-1)
             end
             @testset "Complex{PiTimes}" begin
                 @test 2Pi // (2Pi + 0Pi*im) == 1//1 + 0//1*im
